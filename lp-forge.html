@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LP Forge — Generator Prompt JSON Landing Page</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Karla:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#f3ede2;
+    --ink-dim:#c9c0ae;
+    --bg:#1b1815;
+    --bg-raised:#242019;
+    --bg-inset:#141210;
+    --ember:#e8813a;
+    --ember-dim:#a85a24;
+    --steel:#5c7a80;
+    --line:#3a342b;
+    --ok:#7fae62;
+    --err:#c9634b;
+    --radius:6px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(232,129,58,0.08), transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family:'Karla',sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{
+    font-family:'Barlow Condensed',sans-serif;
+    letter-spacing:0.01em;
+    margin:0;
+  }
+  code, pre, textarea.code, .mono{
+    font-family:'JetBrains Mono',monospace;
+  }
+  a{color:var(--ember);}
+
+  .shell{max-width:980px;margin:0 auto;padding:48px 24px 96px;}
+
+  header.top{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:24px;
+    border-bottom:1px solid var(--line);
+    padding-bottom:28px;
+    margin-bottom:40px;
+    flex-wrap:wrap;
+  }
+  header.top .mark{
+    display:flex;
+    align-items:center;
+    gap:14px;
+  }
+  header.top .mark svg{flex:none;}
+  header.top h1{font-size:34px;font-weight:800;color:var(--ink);}
+  header.top p{margin:4px 0 0;color:var(--ink-dim);font-size:14.5px;max-width:46ch;}
+  .step-index{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--ink-dim);
+    text-align:right;
+  }
+
+  section.block{
+    margin-bottom:36px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:var(--bg-raised);
+    overflow:hidden;
+  }
+  .block-head{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:18px 22px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+  }
+  .block-head .num{
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:800;
+    font-size:22px;
+    color:var(--ember);
+    min-width:28px;
+  }
+  .block-head h2{font-size:20px;font-weight:700;color:var(--ink);}
+  .block-head .sub{font-size:13px;color:var(--ink-dim);margin-top:2px;}
+  .block-body{padding:22px;}
+
+  label{
+    display:block;
+    font-size:12.5px;
+    color:var(--ink-dim);
+    margin-bottom:6px;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+  }
+  input[type=text], input[type=password], input[type=number], textarea, select{
+    width:100%;
+    background:var(--bg-inset);
+    border:1px solid var(--line);
+    color:var(--ink);
+    padding:10px 12px;
+    border-radius:4px;
+    font-size:14px;
+    font-family:'Karla',sans-serif;
+    resize:vertical;
+  }
+  textarea.code{font-size:12.5px;}
+  input:focus, textarea:focus, select:focus{
+    outline:none;
+    border-color:var(--ember-dim);
+  }
+  .field{margin-bottom:16px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
+  @media(max-width:640px){.grid2,.grid3{grid-template-columns:1fr;}}
+  .hint{font-size:12px;color:var(--ink-dim);margin-top:5px;}
+  .checkline{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--ink);}
+  .checkline input{width:auto;}
+
+  button{
+    font-family:'Karla',sans-serif;
+    font-weight:700;
+    font-size:13.5px;
+    border:none;
+    border-radius:4px;
+    padding:10px 18px;
+    cursor:pointer;
+    background:var(--ember);
+    color:#1b1815;
+    transition:filter .12s ease, transform .12s ease;
+  }
+  button:hover{filter:brightness(1.08);}
+  button:active{transform:translateY(1px);}
+  button.secondary{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--ink);
+  }
+  button.secondary:hover{border-color:var(--ember-dim);}
+  button:disabled{opacity:.45;cursor:not-allowed;}
+  button.small{padding:6px 12px;font-size:12px;}
+
+  .row-actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:6px;}
+
+  .status{
+    font-size:12.5px;
+    padding:8px 12px;
+    border-radius:4px;
+    margin-top:12px;
+    display:none;
+  }
+  .status.show{display:block;}
+  .status.ok{background:rgba(127,174,98,0.12);color:var(--ok);border:1px solid rgba(127,174,98,0.3);}
+  .status.err{background:rgba(201,99,75,0.12);color:var(--err);border:1px solid rgba(201,99,75,0.3);}
+  .status.pending{background:rgba(92,122,128,0.15);color:var(--steel);border:1px solid rgba(92,122,128,0.3);}
+
+  .preview-img{
+    max-width:220px;
+    border-radius:4px;
+    border:1px solid var(--line);
+    display:none;
+    margin-top:10px;
+  }
+
+  pre.output{
+    background:var(--bg-inset);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:14px;
+    font-size:12px;
+    line-height:1.55;
+    white-space:pre-wrap;
+    word-break:break-word;
+    max-height:420px;
+    overflow:auto;
+    margin:0;
+    display:none;
+  }
+  pre.output.show{display:block;}
+
+  details.schema{
+    margin-top:8px;
+    border:1px solid var(--line);
+    border-radius:4px;
+    background:var(--bg-inset);
+  }
+  details.schema summary{
+    cursor:pointer;
+    padding:10px 14px;
+    font-size:13px;
+    color:var(--ink-dim);
+    font-weight:600;
+  }
+  details.schema pre{
+    margin:0;
+    padding:0 14px 14px;
+    font-size:11.5px;
+    color:var(--ink-dim);
+    white-space:pre-wrap;
+  }
+
+  .section-card{
+    border:1px solid var(--line);
+    border-radius:4px;
+    margin-bottom:14px;
+    background:var(--bg-inset);
+  }
+  .section-card .sc-head{
+    padding:14px 16px;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .section-card h3{font-size:17px;color:var(--ink);}
+  .section-card .sc-desc{font-size:12.5px;color:var(--ink-dim);margin-top:4px;max-width:60ch;}
+  .section-card .sc-body{padding:0 16px 16px;}
+
+  .badge{
+    display:inline-block;
+    font-size:10.5px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    padding:3px 8px;
+    border-radius:3px;
+    background:rgba(232,129,58,0.15);
+    color:var(--ember);
+    border:1px solid rgba(232,129,58,0.3);
+  }
+
+  footer.note{
+    margin-top:48px;
+    padding-top:24px;
+    border-top:1px solid var(--line);
+    font-size:12.5px;
+    color:var(--ink-dim);
+  }
+  footer.note strong{color:var(--ink);}
+
+  .copy-toast{
+    position:fixed;
+    bottom:24px;
+    left:50%;
+    transform:translateX(-50%) translateY(12px);
+    background:var(--ember);
+    color:#1b1815;
+    font-weight:700;
+    font-size:13px;
+    padding:9px 16px;
+    border-radius:4px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .18s ease, transform .18s ease;
+    z-index:50;
+  }
+  .copy-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <header class="top">
+    <div class="mark">
+      <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+        <rect x="1" y="1" width="32" height="32" rx="4" stroke="#e8813a" stroke-width="2"/>
+        <path d="M9 24V10h9M9 17h7" stroke="#e8813a" stroke-width="2" stroke-linecap="square"/>
+      </svg>
+      <div>
+        <h1>LP Forge</h1>
+        <p>Analisa gaya visual dari gambar referensi, lalu tempa jadi prompt JSON siap pakai untuk tiap section landing page — background image prompt + skema text-overlay.</p>
+      </div>
+    </div>
+    <div class="step-index">v1 · client-side only<br>API key tidak pernah disimpan/di-upload</div>
+  </header>
+
+  <!-- STEP 0: CONFIG -->
+  <section class="block">
+    <div class="block-head"><span class="num">01</span><div><h2>Koneksi Gemini</h2><div class="sub">Dipakai untuk analisa gambar (vision) dan generate JSON per section (text).</div></div></div>
+    <div class="block-body">
+      <div class="grid2">
+        <div class="field">
+          <label for="apiKey">Gemini API Key</label>
+          <input type="password" id="apiKey" placeholder="AIza...">
+          <div class="hint">Disimpan hanya di memori tab ini selama halaman terbuka. Refresh = hilang.</div>
+        </div>
+        <div class="field">
+          <label for="modelName">Model</label>
+          <input type="text" id="modelName" value="gemini-3.5-flash">
+          <div class="hint">Ganti kalau model ini sudah deprecated/diganti Google. Model harus mendukung input gambar.</div>
+        </div>
+      </div>
+      <div class="row-actions">
+        <button class="secondary small" id="btnTest">Tes Koneksi</button>
+      </div>
+      <div class="status" id="statusTest"></div>
+    </div>
+  </section>
+
+  <!-- STEP 1: REFERENCE IMAGE -->
+  <section class="block">
+    <div class="block-head"><span class="num">02</span><div><h2>Analisa Gambar Referensi</h2><div class="sub">Upload contoh visual LP/produk yang mau ditiru gaya-nya (bukan tulisannya, tapi warna, komposisi, mood, treatment gambar).</div></div></div>
+    <div class="block-body">
+      <div class="field">
+        <label for="refImage">Upload Gambar Referensi</label>
+        <input type="file" id="refImage" accept="image/*">
+        <img id="refPreview" class="preview-img">
+      </div>
+      <div class="row-actions">
+        <button id="btnAnalyze">Analisa Gaya Visual</button>
+        <span class="hint" id="analyzeHint"></span>
+      </div>
+      <div class="status" id="statusAnalyze"></div>
+      <div class="field" style="margin-top:14px;">
+        <label for="styleProfile">Style Profile (hasil analisa — boleh diedit manual)</label>
+        <textarea id="styleProfile" class="code" rows="8" placeholder="Akan terisi otomatis setelah analisa. Bisa juga diisi/diedit manual kalau mau skip AI analysis."></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 2: PRODUCT DATA -->
+  <section class="block">
+    <div class="block-head"><span class="num">03</span><div><h2>Data Produk & Copy</h2><div class="sub">Konten mentah. Makin lengkap, makin tajam hasil JSON per section-nya.</div></div></div>
+    <div class="block-body">
+      <div class="grid2">
+        <div class="field">
+          <label for="pNama">Nama Produk</label>
+          <input type="text" id="pNama" placeholder="mis. Gumora Herbal Oil">
+        </div>
+        <div class="field">
+          <label for="pTagline">Tagline / Klaim Utama</label>
+          <input type="text" id="pTagline" placeholder="mis. Redakan sakit gigi dalam hitungan menit">
+        </div>
+      </div>
+      <div class="grid3">
+        <div class="field">
+          <label for="pHargaAsli">Harga Coret</label>
+          <input type="text" id="pHargaAsli" placeholder="Rp100.000">
+        </div>
+        <div class="field">
+          <label for="pHargaPromo">Harga Promo</label>
+          <input type="text" id="pHargaPromo" placeholder="Rp49.999">
+        </div>
+        <div class="field">
+          <label for="pDiskon">Angka Diskon</label>
+          <input type="text" id="pDiskon" value="50%">
+        </div>
+      </div>
+      <div class="field checkline">
+        <input type="checkbox" id="pFreeOngkir" checked>
+        <label style="margin:0;text-transform:none;font-weight:500;color:var(--ink);" for="pFreeOngkir">Tampilkan badge Free Ongkir</label>
+      </div>
+      <div class="field">
+        <label for="pPain">Pain Points (satu per baris)</label>
+        <textarea id="pPain" rows="3" placeholder="Sakit gigi bikin nggak bisa tidur&#10;Sudah minum obat tapi kambuh lagi&#10;Takut ke dokter gigi"></textarea>
+      </div>
+      <div class="field">
+        <label for="pSolusi">Solusi (satu per baris atau paragraf singkat)</label>
+        <textarea id="pSolusi" rows="3" placeholder="Formula herbal yang meresap langsung ke sumber sakit, bekerja dalam hitungan menit"></textarea>
+      </div>
+      <div class="field">
+        <label for="pBenefit">Benefit (satu per baris)</label>
+        <textarea id="pBenefit" rows="4" placeholder="Meredakan nyeri cepat&#10;100% bahan herbal alami&#10;Aman untuk anak & dewasa&#10;Praktis, tinggal teteskan"></textarea>
+      </div>
+      <div class="field">
+        <label for="pDeskripsi">Deskripsi Produk</label>
+        <textarea id="pDeskripsi" rows="3" placeholder="Jelaskan produk, kandungan, cara pakai secara singkat"></textarea>
+      </div>
+      <div class="field">
+        <label for="pTestimoni">Testimoni (format: Nama | Rating | Isi — satu per baris)</label>
+        <textarea id="pTestimoni" rows="3" placeholder="Bu Sari, Bekasi | 5 | Baru diteteskan sekali langsung reda, nggak nyangka&#10;Pak Anto, Solo | 5 | Anak saya jadi berani sikat gigi lagi"></textarea>
+      </div>
+      <div class="field">
+        <label for="pCta">Teks & Tujuan CTA</label>
+        <input type="text" id="pCta" placeholder="mis. Pesan Sekarang Sebelum Promo Habis — link WA/checkout">
+      </div>
+      <div class="field">
+        <label for="pEmbed">Kode Embed Form (dari OO) — hanya disimpan lokal, TIDAK dikirim ke AI</label>
+        <textarea id="pEmbed" class="code" rows="3" placeholder="<script src=&quot;...&quot;></script> atau <iframe ...>"></textarea>
+        <div class="hint">Dipakai tool ini hanya untuk mengingatkan area penempatan di section Form. Tempel manual ke HTML LP final kamu nanti.</div>
+      </div>
+      <div class="field">
+        <label for="aspect">Aspect Ratio Gambar (untuk semua section)</label>
+        <select id="aspect">
+          <option value="4:5|1080x1350">4:5 — 1080x1350 (feed IG, umum utk LP mobile)</option>
+          <option value="1:1|1080x1080">1:1 — 1080x1080</option>
+          <option value="3:4|1080x1440">3:4 — 1080x1440</option>
+          <option value="9:16|1080x1920">9:16 — 1080x1920 (full mobile)</option>
+          <option value="16:9|1920x1080">16:9 — 1920x1080</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <!-- STEP 3: SECTIONS -->
+  <section class="block">
+    <div class="block-head"><span class="num">04</span><div><h2>Generate JSON per Section</h2><div class="sub">Tiap kartu = satu prompt JSON siap copy ke image-gen + overlay renderer kamu.</div></div></div>
+    <div class="block-body">
+      <div class="row-actions" style="margin-bottom:18px;">
+        <button id="btnGenAll">Generate Semua Section</button>
+        <button class="secondary" id="btnDownloadAll">Download Semua (.json)</button>
+        <span class="hint" id="genAllHint"></span>
+      </div>
+      <div id="sectionsContainer"></div>
+
+      <details class="schema">
+        <summary>Lihat skema JSON overlay-engine (referensi field)</summary>
+        <pre id="schemaText"></pre>
+      </details>
+    </div>
+  </section>
+
+  <footer class="note">
+    <strong>Cara pakai singkat:</strong> isi API key → upload gambar referensi & analisa → isi data produk → generate tiap section → copy JSON ke tool image-generation/overlay-renderer kamu masing-masing (mis. Nano Banana, Imagen, atau engine overlay video kamu yang di-adaptasi untuk gambar statis).<br><br>
+    <strong>Catatan keamanan:</strong> file ini murni client-side. Kalau di-deploy ke Vercel sebagai halaman publik, API key yang diketik di sini akan terlihat oleh siapa pun yang membuka network tab browser mereka sendiri saat dipakai — jangan bagikan link tool ini ke orang lain sambil API key kamu masih tertanam di sesi mereka. Untuk pemakaian solo/internal ini aman.
+  </footer>
+
+</div>
+
+<div class="copy-toast" id="copyToast">Disalin ke clipboard</div>
+
+<script>
+/* ---------------------------------------------------------
+   SCHEMA — kontrak JSON yang dipakai overlay-engine gambar LP
+--------------------------------------------------------- */
+const SCHEMA_TEXT = `{
+  "meta": {
+    "section": "string, id section (headline/pain/solusi/...)",
+    "canvas": { "width": number, "height": number, "aspect_ratio": "string, mis '4:5'" },
+    "purpose": "string, satu kalimat tujuan visual section ini"
+  },
+  "background": {
+    "image_prompt": "string (Bahasa Inggris) - prompt deskriptif utk image-gen model: subjek, komposisi, lighting, mood, palet warna",
+    "negative_prompt": "string (Bahasa Inggris) - hal yang harus dihindari",
+    "style_tags": ["array of string, mis 'clean product photography', 'warm lighting'"]
+  },
+  "overlays": [
+    {
+      "id": "string unik",
+      "type": "text | badge | icon | shape",
+      "content": "string (Bahasa Indonesia) - isi teks/label",
+      "position": { "anchor": "top-left|top-center|top-right|center|bottom-left|bottom-center|bottom-right", "x_pct": number, "y_pct": number },
+      "size": { "width_pct": number },
+      "typography": {
+        "font_family": "string", "font_weight": number, "font_size_px": number,
+        "line_height": number, "letter_spacing": "string", "color": "hex", "text_align": "left|center|right"
+      },
+      "stroke": { "enabled": boolean, "color": "hex", "width_px": number },
+      "shadow": { "enabled": boolean, "color": "rgba(...)", "blur_px": number, "offset_y_px": number },
+      "background_box": { "enabled": boolean, "fill": "hex", "opacity": number, "padding_px": number, "border_radius_px": number, "rotation_deg": number },
+      "z_index": number
+    }
+  ],
+  "embed_slot": {
+    "enabled": "boolean - true hanya utk section form",
+    "anchor": "string",
+    "width_pct": number,
+    "height_px": number,
+    "placeholder_note": "string - keterangan area ini utk taruh embed form asli, BUKAN dibuat AI"
+  }
+}`;
+
+/* ---------------------------------------------------------
+   SECTION DEFINITIONS
+--------------------------------------------------------- */
+const SECTIONS = [
+  {
+    id: 'headline',
+    title: '1. Headline',
+    desc: 'Klaim utama + badge diskon 50% + badge Free Ongkir. Overlay pertama yang dilihat calon buyer, harus berhenti-scroll.',
+    guidance: 'Overlay wajib: headline_text (klaim utama, singkat & kuat), diskon_badge ("DISKON {diskon}" gaya badge mencolok, biasanya pojok atas), free_ongkir_badge (badge terpisah, hanya jika free ongkir aktif). Background: foto produk hero, komposisi dramatis, jadi pusat perhatian.'
+  },
+  {
+    id: 'pain',
+    title: '2. Pain',
+    desc: 'Menampilkan masalah yang dialami calon buyer supaya mereka merasa "ini gue banget".',
+    guidance: 'Overlay: pain_headline (kalimat empati/masalah utama) + 2-3 pain_point_item (masing-masing satu masalah singkat, bisa pakai bullet/icon style). Background: suasana yang menggambarkan ketidaknyamanan/masalah, warna lebih muted/gelap dibanding section lain.'
+  },
+  {
+    id: 'solusi',
+    title: '3. Solusi',
+    desc: 'Transisi dari masalah ke solusi — produk sebagai jawaban.',
+    guidance: 'Overlay: solusi_headline (mis. "Solusinya Ada Di Sini") + solusi_text (penjelasan singkat kenapa produk ini solusinya). Background: foto produk mulai jadi sorotan, transisi warna dari muted (pain) ke cerah/positif.'
+  },
+  {
+    id: 'benefit',
+    title: '4. Benefit',
+    desc: 'List keunggulan produk dalam bentuk poin-poin visual.',
+    guidance: 'Overlay: benefit_headline + satu overlay type "icon"+"text" berpasangan untuk tiap item benefit (buat overlay terpisah per item, posisi tersusun rapi grid/list, jangan bertumpuk). Background: netral/terang supaya teks benefit tetap terbaca jelas.'
+  },
+  {
+    id: 'deskripsi',
+    title: '5. Deskripsi Produk',
+    desc: 'Detail produk: kandungan, cara pakai, spesifikasi singkat.',
+    guidance: 'Overlay: deskripsi_headline + deskripsi_body (ringkas, enak dibaca) + opsional badge kecil untuk sertifikasi/BPOM/halal jika relevan. Background: foto produk dari sudut detail (label, tekstur, kemasan).'
+  },
+  {
+    id: 'testimoni',
+    title: '6. Testimoni',
+    desc: 'Bukti sosial dari pembeli lain.',
+    guidance: 'Overlay: testimoni_headline + satu set overlay per testimoni (nama, rating bintang sebagai text/icon, kutipan singkat). Buat card-style background_box terpisah untuk tiap testimoni agar jelas batasnya. Background: bersih, tidak ramai, supaya fokus ke testimoni.'
+  },
+  {
+    id: 'harga',
+    title: '7. Harga',
+    desc: 'Bandingkan harga coret vs harga promo, tekankan hemat & urgensi.',
+    guidance: 'Overlay: harga_asli (dengan efek dicoret via styling/label), harga_promo (besar & mencolok), badge_hemat (mis. "Hemat 50%"), diskon_urgency_text (mis. "Promo terbatas hari ini"). Background: sederhana, warna kontras tinggi supaya angka harga paling menonjol.'
+  },
+  {
+    id: 'form',
+    title: '8. Isian Form (Embed dari OO)',
+    desc: 'Area untuk form checkout/order embed. AI hanya bikin background & judul, BUKAN form-nya.',
+    guidance: 'Overlay: form_headline (mis. "Isi Data untuk Pesan Sekarang") + form_subtext singkat (mis. "Stok terbatas, konfirmasi via WhatsApp"). WAJIB isi embed_slot dengan enabled=true, area kosong luas di tengah/bawah untuk tempat form asli ditempel manual. Background: tenang, tidak mengganggu, beri ruang kosong jelas untuk form.'
+  },
+  {
+    id: 'cta',
+    title: '9. CTA',
+    desc: 'Dorongan terakhir sebelum closing — urgensi + tombol aksi.',
+    guidance: 'Overlay: cta_headline (dorongan kuat terakhir), cta_button_text (teks tombol, mis. isi dari data CTA), urgency_badge (mis. "Stok Terbatas" / "Free Ongkir Hari Ini"). Background: energik, warna paling berani dari seluruh section, mengarahkan mata ke tombol CTA.'
+  }
+];
+
+/* ---------------------------------------------------------
+   STATE
+--------------------------------------------------------- */
+let refImageBase64 = null;
+let refImageMime = null;
+const sectionResults = {};
+
+/* ---------------------------------------------------------
+   HELPERS
+--------------------------------------------------------- */
+function $(id){ return document.getElementById(id); }
+
+function setStatus(el, kind, msg){
+  el.className = 'status show ' + kind;
+  el.textContent = msg;
+}
+function clearStatus(el){
+  el.className = 'status';
+  el.textContent = '';
+}
+
+function toast(msg){
+  const t = $('copyToast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1400);
+}
+
+function copyText(text){
+  navigator.clipboard.writeText(text).then(()=>toast('Disalin ke clipboard'))
+    .catch(()=>toast('Gagal menyalin — copy manual ya'));
+}
+
+function getAspect(){
+  const raw = $('aspect').value; // "4:5|1080x1350"
+  const [ratio, dims] = raw.split('|');
+  const [w,h] = dims.split('x').map(Number);
+  return { ratio, width:w, height:h };
+}
+
+function collectProductData(){
+  return {
+    nama: $('pNama').value.trim(),
+    tagline: $('pTagline').value.trim(),
+    hargaAsli: $('pHargaAsli').value.trim(),
+    hargaPromo: $('pHargaPromo').value.trim(),
+    diskon: $('pDiskon').value.trim(),
+    freeOngkir: $('pFreeOngkir').checked,
+    pain: $('pPain').value.trim(),
+    solusi: $('pSolusi').value.trim(),
+    benefit: $('pBenefit').value.trim(),
+    deskripsi: $('pDeskripsi').value.trim(),
+    testimoni: $('pTestimoni').value.trim(),
+    cta: $('pCta').value.trim()
+  };
+}
+
+/* ---------------------------------------------------------
+   GEMINI CALLS
+--------------------------------------------------------- */
+async function callGemini(parts){
+  const apiKey = $('apiKey').value.trim();
+  const model = $('modelName').value.trim();
+  if(!apiKey) throw new Error('API key belum diisi.');
+  if(!model) throw new Error('Nama model belum diisi.');
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const res = await fetch(url, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ contents: [{ parts }] })
+  });
+  const data = await res.json();
+  if(!res.ok){
+    const msg = data && data.error && data.error.message ? data.error.message : `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  const text = data && data.candidates && data.candidates[0] && data.candidates[0].content
+    && data.candidates[0].content.parts && data.candidates[0].content.parts[0]
+    && data.candidates[0].content.parts[0].text;
+  if(!text) throw new Error('Respons Gemini kosong / format tidak dikenali.');
+  return text;
+}
+
+function stripJsonFence(text){
+  return text.replace(/^```(json)?/i, '').replace(/```$/,'').trim();
+}
+
+async function testConnection(){
+  const statusEl = $('statusTest');
+  setStatus(statusEl, 'pending', 'Menghubungi Gemini...');
+  try{
+    const out = await callGemini([{ text: 'Balas hanya dengan kata: OK' }]);
+    setStatus(statusEl, 'ok', 'Koneksi berhasil. Respons: ' + out.trim().slice(0,60));
+  }catch(e){
+    setStatus(statusEl, 'err', 'Gagal: ' + e.message);
+  }
+}
+
+async function analyzeImage(){
+  const statusEl = $('statusAnalyze');
+  if(!refImageBase64){
+    setStatus(statusEl, 'err', 'Upload gambar referensi dulu.');
+    return;
+  }
+  setStatus(statusEl, 'pending', 'Menganalisa gaya visual...');
+  const prompt = `Kamu adalah art director. Lihat gambar landing page/produk ini dan hasilkan ringkasan gaya visual yang bisa dipakai sebagai acuan untuk membuat gambar-gambar baru yang senada. Jawab dalam Bahasa Indonesia, format ringkas berupa poin-poin (bukan JSON), mencakup:
+- Palet warna dominan (sebutkan perkiraan hex jika bisa)
+- Gaya tipografi/mood tulisan yang terlihat (walau kamu tidak perlu membaca isi tulisannya)
+- Gaya komposisi & layout (rule of thirds, close-up, dsb)
+- Gaya pencahayaan/treatment foto (natural, studio, dramatis, dsb)
+- Mood/kesan keseluruhan (mis. clean & medis, hangat & tradisional, energik, dsb)
+- Elemen visual khas yang berulang (badge, bentuk, tekstur, dsb)`;
+  try{
+    const out = await callGemini([
+      { text: prompt },
+      { inline_data: { mime_type: refImageMime, data: refImageBase64 } }
+    ]);
+    $('styleProfile').value = out.trim();
+    setStatus(statusEl, 'ok', 'Analisa selesai. Hasil ada di kotak Style Profile di bawah — boleh diedit.');
+  }catch(e){
+    setStatus(statusEl, 'err', 'Gagal: ' + e.message);
+  }
+}
+
+function buildSectionPrompt(section){
+  const data = collectProductData();
+  const styleProfile = $('styleProfile').value.trim() || '(belum ada analisa gambar — pakai asumsi gaya bersih, modern, warna hangat sesuai produk herbal/kesehatan)';
+  const aspect = getAspect();
+
+  let productBlock = `Nama Produk: ${data.nama || '-'}
+Tagline: ${data.tagline || '-'}
+Harga Coret: ${data.hargaAsli || '-'}
+Harga Promo: ${data.hargaPromo || '-'}
+Diskon: ${data.diskon || '-'}
+Free Ongkir: ${data.freeOngkir ? 'Ya' : 'Tidak'}
+Pain Points:
+${data.pain || '-'}
+Solusi:
+${data.solusi || '-'}
+Benefit:
+${data.benefit || '-'}
+Deskripsi Produk:
+${data.deskripsi || '-'}
+Testimoni (Nama | Rating | Isi):
+${data.testimoni || '-'}
+CTA:
+${data.cta || '-'}`;
+
+  return `Kamu adalah generator prompt JSON untuk sistem rendering gambar landing page yang punya image-generation model + text-overlay engine terpisah.
+
+ATURAN OUTPUT (WAJIB):
+- Balas HANYA dengan satu objek JSON valid. TANPA markdown, TANPA backtick, TANPA penjelasan di luar JSON.
+- Ikuti skema berikut secara ketat pada struktur field wajibnya (boleh menambah overlay lain kalau relevan untuk section ini, jangan menghapus field wajib):
+
+${SCHEMA_TEXT}
+
+KETENTUAN CANVAS:
+"meta.canvas" harus persis: { "width": ${aspect.width}, "height": ${aspect.height}, "aspect_ratio": "${aspect.ratio}" }
+
+STYLE PROFILE (acuan gaya visual dari gambar referensi):
+${styleProfile}
+
+DATA PRODUK & COPY:
+${productBlock}
+
+TUGAS UNTUK SECTION INI — "${section.title}":
+${section.guidance}
+
+INSTRUKSI TAMBAHAN:
+- "background.image_prompt" dan "background.negative_prompt" ditulis dalam Bahasa Inggris, deskriptif, cukup detail untuk dipakai langsung di image-generation model, dan konsisten dengan style profile di atas.
+- Semua "content" pada overlay ditulis dalam Bahasa Indonesia, singkat, dan menjual (copywriting ala landing page e-commerce Indonesia).
+- Atur "position" tiap overlay supaya tidak saling tumpang tindih dan enak dibaca di canvas ${aspect.width}x${aspect.height}.
+- Field "embed_slot" hanya diisi enabled:true jika section = form, selain itu enabled:false.
+- Jangan mengarang embed code apa pun.`;
+}
+
+async function generateSection(section, statusEl, outputEl){
+  setStatus(statusEl, 'pending', 'Generating...');
+  outputEl.classList.remove('show');
+  try{
+    const prompt = buildSectionPrompt(section);
+    const raw = await callGemini([{ text: prompt }]);
+    const cleaned = stripJsonFence(raw);
+    let pretty = cleaned;
+    try{
+      pretty = JSON.stringify(JSON.parse(cleaned), null, 2);
+    }catch(_){ /* biarkan apa adanya kalau parse gagal, tetap ditampilkan */ }
+    sectionResults[section.id] = pretty;
+    outputEl.textContent = pretty;
+    outputEl.classList.add('show');
+    setStatus(statusEl, 'ok', 'Selesai.');
+  }catch(e){
+    setStatus(statusEl, 'err', 'Gagal: ' + e.message);
+  }
+}
+
+/* ---------------------------------------------------------
+   RENDER SECTION CARDS
+--------------------------------------------------------- */
+function renderSectionCards(){
+  const container = $('sectionsContainer');
+  SECTIONS.forEach(section => {
+    const card = document.createElement('div');
+    card.className = 'section-card';
+    card.innerHTML = `
+      <div class="sc-head">
+        <div>
+          <h3>${section.title}</h3>
+          <div class="sc-desc">${section.desc}</div>
+        </div>
+        <span class="badge">${section.id}</span>
+      </div>
+      <div class="sc-body">
+        <div class="row-actions">
+          <button class="secondary small btn-gen">Generate JSON</button>
+          <button class="secondary small btn-copy">Copy</button>
+        </div>
+        <div class="status" data-role="status"></div>
+        <pre class="output" data-role="output"></pre>
+      </div>
+    `;
+    container.appendChild(card);
+
+    const statusEl = card.querySelector('[data-role=status]');
+    const outputEl = card.querySelector('[data-role=output]');
+    card.querySelector('.btn-gen').addEventListener('click', () => generateSection(section, statusEl, outputEl));
+    card.querySelector('.btn-copy').addEventListener('click', () => {
+      const text = sectionResults[section.id];
+      if(!text){ toast('Belum ada hasil untuk di-copy'); return; }
+      copyText(text);
+    });
+  });
+}
+
+/* ---------------------------------------------------------
+   GENERATE ALL / DOWNLOAD ALL
+--------------------------------------------------------- */
+async function generateAll(){
+  const hint = $('genAllHint');
+  const cards = document.querySelectorAll('.section-card');
+  for(let i=0;i<SECTIONS.length;i++){
+    hint.textContent = `Memproses ${i+1}/${SECTIONS.length}: ${SECTIONS[i].title}...`;
+    const card = cards[i];
+    const statusEl = card.querySelector('[data-role=status]');
+    const outputEl = card.querySelector('[data-role=output]');
+    await generateSection(SECTIONS[i], statusEl, outputEl);
+  }
+  hint.textContent = 'Semua section selesai diproses.';
+}
+
+function downloadAll(){
+  if(Object.keys(sectionResults).length === 0){
+    toast('Belum ada hasil untuk didownload');
+    return;
+  }
+  const combined = {};
+  SECTIONS.forEach(s => { if(sectionResults[s.id]){
+    try{ combined[s.id] = JSON.parse(sectionResults[s.id]); }
+    catch(_){ combined[s.id] = sectionResults[s.id]; }
+  }});
+  const blob = new Blob([JSON.stringify(combined, null, 2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'lp-sections.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* ---------------------------------------------------------
+   IMAGE UPLOAD HANDLER
+--------------------------------------------------------- */
+function handleImageUpload(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const result = reader.result; // data:mime;base64,....
+    const [meta, b64] = result.split(',');
+    refImageMime = meta.match(/data:(.*);base64/)[1];
+    refImageBase64 = b64;
+    const preview = $('refPreview');
+    preview.src = result;
+    preview.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ---------------------------------------------------------
+   INIT
+--------------------------------------------------------- */
+document.addEventListener('DOMContentLoaded', () => {
+  $('schemaText').textContent = SCHEMA_TEXT;
+  renderSectionCards();
+  $('btnTest').addEventListener('click', testConnection);
+  $('btnAnalyze').addEventListener('click', analyzeImage);
+  $('refImage').addEventListener('change', handleImageUpload);
+  $('btnGenAll').addEventListener('click', generateAll);
+  $('btnDownloadAll').addEventListener('click', downloadAll);
+});
+</script>
+</body>
+</html>
