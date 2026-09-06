@@ -267,10 +267,65 @@
     z-index:50;
   }
   .copy-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  /* ---- LOGIN SCREEN ---- */
+  #loginScreen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .login-card{
+    width:100%;
+    max-width:360px;
+    background:var(--bg-raised);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:32px 28px;
+  }
+  .login-card .mark{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
+  .login-card h1{font-size:26px;font-weight:800;color:var(--ink);}
+  .login-card p.sub{font-size:13px;color:var(--ink-dim);margin:6px 0 22px;}
+  .login-card button{width:100%;margin-top:6px;padding:11px;}
+  .login-card .status{margin-top:14px;}
+  #logoutBtn{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--ink-dim);
+    font-size:12px;
+    padding:6px 12px;
+  }
+  #logoutBtn:hover{border-color:var(--ember-dim);color:var(--ink);}
+  .who-badge{font-size:12px;color:var(--ink-dim);margin-right:10px;}
 </style>
 </head>
 <body>
 
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="mark">
+      <svg width="30" height="30" viewBox="0 0 34 34" fill="none">
+        <rect x="1" y="1" width="32" height="32" rx="4" stroke="#e8813a" stroke-width="2"/>
+        <path d="M9 24V10h9M9 17h7" stroke="#e8813a" stroke-width="2" stroke-linecap="square"/>
+      </svg>
+      <h1>LP Forge</h1>
+    </div>
+    <p class="sub">Akses terbatas. Hubungi owner tool ini kalau belum punya akun.</p>
+    <div class="field">
+      <label for="loginUser">Username</label>
+      <input type="text" id="loginUser" autocomplete="username">
+    </div>
+    <div class="field">
+      <label for="loginPass">Password</label>
+      <input type="password" id="loginPass" autocomplete="current-password">
+    </div>
+    <button id="btnLogin">Masuk</button>
+    <div class="status" id="statusLogin"></div>
+  </div>
+</div>
+
+<div id="appRoot" style="display:none;">
 <div class="shell">
 
   <header class="top">
@@ -284,7 +339,10 @@
         <p>Analisa gaya visual dari gambar referensi, lalu tempa jadi prompt JSON siap pakai untuk tiap section landing page — background image prompt + skema text-overlay.</p>
       </div>
     </div>
-    <div class="step-index">v1 · client-side only<br>API key tidak pernah disimpan/di-upload</div>
+    <div class="step-index">
+      <div style="margin-bottom:8px;"><span class="who-badge" id="whoBadge"></span><button id="logoutBtn" class="small">Logout</button></div>
+      v1 · client-side only<br>API key tidak pernah disimpan/di-upload
+    </div>
   </header>
 
   <!-- STEP 0: CONFIG -->
@@ -374,9 +432,9 @@
           <input type="text" id="pDiskon" value="50%">
         </div>
       </div>
-      <div class="field checkline">
-        <input type="checkbox" id="pFreeOngkir" checked>
-        <label style="margin:0;text-transform:none;font-weight:500;color:var(--ink);" for="pFreeOngkir">Tampilkan badge Free Ongkir</label>
+      <div class="field checkline" style="gap:24px;flex-wrap:wrap;">
+        <span class="checkline"><input type="checkbox" id="pShowDiskonRibbon" checked><label style="margin:0;text-transform:none;font-weight:500;color:var(--ink);" for="pShowDiskonRibbon">Tampilkan ribbon Promo Diskon</label></span>
+        <span class="checkline"><input type="checkbox" id="pFreeOngkir" checked><label style="margin:0;text-transform:none;font-weight:500;color:var(--ink);" for="pFreeOngkir">Tampilkan ribbon Free Ongkir</label></span>
       </div>
       <div class="field" style="border-top:1px solid var(--line);padding-top:16px;">
         <div class="row-actions">
@@ -452,6 +510,7 @@
   </footer>
 
 </div>
+</div>
 
 <div class="copy-toast" id="copyToast">Disalin ke clipboard</div>
 
@@ -518,7 +577,7 @@ const SECTIONS = [
     id: 'headline',
     title: '1. Headline',
     desc: 'Ribbon diskon 50% + free ongkir di pojok atas, headline masalah multi-warna, foto model kesakitan, deretan badge gejala.',
-    guidance: 'Overlay wajib: (1) ribbon_diskon (type ribbon, pojok kiri atas, mis. "PROMO DISKON {diskon}"), (2) ribbon_ongkir (type ribbon, pojok kanan atas, warna beda dari ribbon diskon, mis. "GRATIS ONGKOS KIRIM"), (3) headline_text (baris headline masalah utama, pecah 2-3 baris beda warna kuning/putih/merah di atas background gelap, sertakan icon warning kecil di depan baris pertama), (4) subheadline_urgency (mis. "SEGERA ATASI SEKARANG JUGA", background_box merah), (5) 3-5 icon_badge berjejer untuk gejala/masalah terkait produk (badge bulat kecil + label singkat di bawahnya), (6) closing_banner (banner sempit di bagian bawah section, background merah tua, teks peringatan singkat + 1 icon). Background: foto orang yang mengalami masalah (mis. memegang area yang sakit), ekspresi jelas, area masalah dikasih highlight visual di background_image_prompt (glow/lingkaran merah transparan).'
+    guidance: 'Overlay wajib: (1) ribbon_diskon (type ribbon, pojok kiri atas, mis. "PROMO DISKON {diskon}") — HANYA dibuat kalau toggle "Tampilkan ribbon Promo Diskon" aktif, kalau tidak aktif JANGAN buat overlay ini sama sekali, (2) ribbon_ongkir (type ribbon, pojok kanan atas, warna beda dari ribbon diskon, mis. "GRATIS ONGKOS KIRIM") — HANYA dibuat kalau toggle "Tampilkan ribbon Free Ongkir" aktif, kalau tidak aktif JANGAN buat overlay ini sama sekali, (3) headline_text (baris headline masalah utama, pecah 2-3 baris beda warna kuning/putih/merah di atas background gelap, sertakan icon warning kecil di depan baris pertama), (4) subheadline_urgency (mis. "SEGERA ATASI SEKARANG JUGA", background_box merah), (5) 3-5 icon_badge berjejer untuk gejala/masalah terkait produk (badge bulat kecil + label singkat di bawahnya), (6) closing_banner (banner sempit di bagian bawah section, background merah tua, teks peringatan singkat + 1 icon). Background: foto orang yang mengalami masalah (mis. memegang area yang sakit), ekspresi jelas, area masalah dikasih highlight visual di background_image_prompt (glow/lingkaran merah transparan).'
   },
   {
     id: 'pain',
@@ -618,6 +677,7 @@ function collectProductData(){
     hargaAsli: $('pHargaAsli').value.trim(),
     hargaPromo: $('pHargaPromo').value.trim(),
     diskon: $('pDiskon').value.trim(),
+    showDiskonRibbon: $('pShowDiskonRibbon').checked,
     freeOngkir: $('pFreeOngkir').checked,
     pain: $('pPain').value.trim(),
     solusi: $('pSolusi').value.trim(),
@@ -811,6 +871,10 @@ ${productBlock}
 
 TUGAS UNTUK SECTION INI — "${section.title}":
 ${section.guidance}
+${section.id === 'headline' ? `
+ATURAN KHUSUS SECTION HEADLINE INI (WAJIB DIPATUHI, JANGAN DILANGGAR):
+- Overlay ribbon_diskon: ${data.showDiskonRibbon ? 'WAJIB dibuat dan diisi sesuai data diskon di atas.' : 'JANGAN dibuat sama sekali — user menonaktifkan ribbon ini.'}
+- Overlay ribbon_ongkir: ${data.freeOngkir ? 'WAJIB dibuat.' : 'JANGAN dibuat sama sekali — user menonaktifkan ribbon ini.'}` : ''}
 
 INSTRUKSI TAMBAHAN:
 - WAJIB sesuaikan istilah, framing, dan palet warna dengan "Kategori Produk" di atas. Jangan gunakan istilah/klaim khas herbal (mis. "100% alami", "formula herbal") kalau kategorinya bukan Herbal/Kesehatan.
@@ -934,9 +998,93 @@ function handleImageUpload(e){
 }
 
 /* ---------------------------------------------------------
+   AUTH — login gate via /api/login & /api/verify (server-side check)
+--------------------------------------------------------- */
+const SESSION_KEY = 'lpforge_session';
+
+function getSession(){
+  try{
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  }catch(_){ return null; }
+}
+function setSession(obj){ sessionStorage.setItem(SESSION_KEY, JSON.stringify(obj)); }
+function clearSession(){ sessionStorage.removeItem(SESSION_KEY); }
+
+function showLogin(){
+  $('loginScreen').style.display = 'flex';
+  $('appRoot').style.display = 'none';
+}
+function showApp(username){
+  $('loginScreen').style.display = 'none';
+  $('appRoot').style.display = 'block';
+  $('whoBadge').textContent = username ? `Login sebagai ${username}` : '';
+  initTool();
+}
+
+async function doLogin(){
+  const statusEl = $('statusLogin');
+  const username = $('loginUser').value.trim();
+  const password = $('loginPass').value;
+  if(!username || !password){
+    setStatus(statusEl, 'err', 'Isi username dan password.');
+    return;
+  }
+  setStatus(statusEl, 'pending', 'Memeriksa akun...');
+  try{
+    const res = await fetch('/api/login', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if(!res.ok || !data.token){
+      setStatus(statusEl, 'err', data.error || 'Username atau password salah.');
+      return;
+    }
+    setSession({ token: data.token, username: data.username });
+    clearStatus(statusEl);
+    showApp(data.username);
+  }catch(e){
+    setStatus(statusEl, 'err', 'Gagal menghubungi server login: ' + e.message);
+  }
+}
+
+async function verifySession(){
+  const session = getSession();
+  if(!session || !session.token){ showLogin(); return; }
+  try{
+    const res = await fetch('/api/verify', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ token: session.token })
+    });
+    const data = await res.json();
+    if(data && data.valid){
+      showApp(data.username || session.username);
+    }else{
+      clearSession();
+      showLogin();
+    }
+  }catch(e){
+    // Kalau server verify tidak bisa dihubungi, jangan loloskan begitu saja — minta login ulang.
+    clearSession();
+    showLogin();
+  }
+}
+
+function doLogout(){
+  clearSession();
+  location.reload();
+}
+
+/* ---------------------------------------------------------
    INIT
 --------------------------------------------------------- */
-document.addEventListener('DOMContentLoaded', () => {
+let toolInitialized = false;
+function initTool(){
+  if(toolInitialized) return;
+  toolInitialized = true;
   $('schemaText').textContent = SCHEMA_TEXT;
   renderSectionCards();
   $('btnTest').addEventListener('click', testConnection);
@@ -945,6 +1093,13 @@ document.addEventListener('DOMContentLoaded', () => {
   $('refImage').addEventListener('change', handleImageUpload);
   $('btnGenAll').addEventListener('click', generateAll);
   $('btnDownloadAll').addEventListener('click', downloadAll);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  $('btnLogin').addEventListener('click', doLogin);
+  $('loginPass').addEventListener('keydown', e => { if(e.key === 'Enter') doLogin(); });
+  $('logoutBtn').addEventListener('click', doLogout);
+  verifySession();
 });
 </script>
 </body>
