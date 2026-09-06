@@ -345,6 +345,21 @@
           <input type="text" id="pTagline" placeholder="mis. Redakan sakit gigi dalam hitungan menit">
         </div>
       </div>
+      <div class="field">
+        <label for="pKategori">Kategori Produk</label>
+        <select id="pKategori">
+          <option value="Herbal/Kesehatan">Herbal / Kesehatan</option>
+          <option value="Kecantikan/Skincare">Kecantikan / Skincare</option>
+          <option value="Fashion/Aksesoris">Fashion / Aksesoris</option>
+          <option value="Gadget/Elektronik">Gadget / Elektronik</option>
+          <option value="Makanan/Minuman">Makanan / Minuman</option>
+          <option value="Ibu & Anak">Ibu & Anak</option>
+          <option value="Rumah Tangga">Rumah Tangga</option>
+          <option value="Digital/Kursus">Digital / Kursus / Jasa</option>
+          <option value="Lainnya">Lainnya (tulis di Tagline/Deskripsi)</option>
+        </select>
+        <div class="hint">Dipakai supaya istilah, framing, dan warna default menyesuaikan produk — bukan otomatis kebawa gaya herbal.</div>
+      </div>
       <div class="grid3">
         <div class="field">
           <label for="pHargaAsli">Harga Coret</label>
@@ -458,7 +473,8 @@ const SCHEMA_TEXT = `{
   "overlays": [
     {
       "id": "string unik",
-      "type": "text | badge | icon | shape",
+      "type": "text | badge | icon | shape | ribbon | numbered_step | chat_bubble | price_box | arrow",
+      "_type_notes": "ribbon = pita/banner miring di sudut (mis. promo/diskon); badge = label bulat/kotak kecil mencolok; numbered_step = elemen langkah bernomor (lingkaran angka + teks); chat_bubble = mockup bubble chat WhatsApp utk testimoni; price_box = kotak perbandingan harga coret vs harga promo; arrow = penunjuk visual ke elemen lain (mis. ke form)",
       "content": "string (Bahasa Indonesia) - isi teks/label",
       "position": { "anchor": "top-left|top-center|top-right|center|bottom-left|bottom-center|bottom-right", "x_pct": number, "y_pct": number },
       "size": { "width_pct": number },
@@ -482,62 +498,75 @@ const SCHEMA_TEXT = `{
 }`;
 
 /* ---------------------------------------------------------
-   SECTION DEFINITIONS
+   GAYA VISUAL WAJIB — pola "hard-selling herbal" ala LP referensi
 --------------------------------------------------------- */
+const BOMBASTIC_STYLE_DIRECTIVE = `Landing page ini bergaya HARD-SELLING/BOMBASTIS ala funnel checkout Indonesia, bukan gaya minimalis-kalem. Ini adalah pola STRUKTURAL yang berlaku untuk kategori produk apa pun — istilah, warna, dan nada bahasa WAJIB disesuaikan dengan kategori produk & style profile yang diberikan, JANGAN otomatis pakai istilah/warna khas herbal kalau produknya bukan herbal:
+- Headline TIDAK boleh satu warna datar: pecah jadi beberapa baris dengan warna berbeda-beda, semua bold/heavy weight, ukuran besar, di atas background kontras (gelap atau terang tergantung kategori produk).
+- Selalu ada elemen urgency eksplisit: ikon tanda seru/jam, atau kalimat pendesak yang wajar untuk kategori produk ini (jangan paksakan "sembuh"/klaim medis kalau produknya bukan kesehatan).
+- Badge diskon & free ongkir tampil sebagai RIBBON/pita diagonal di pojok atas, warna kontras tinggi terhadap warna dasar section.
+- Manfaat/fitur/kandungan produk ditampilkan sebagai deretan badge bulat kecil berikon + label singkat (icon_badge row), bukan paragraf panjang — istilahnya menyesuaikan kategori (mis. "kandungan" untuk herbal/skincare, "fitur" untuk gadget, "bahan" untuk fashion/makanan).
+- Kalau section menjelaskan langkah/cara pakai atau alur proses, gunakan numbered_step: lingkaran angka besar + judul singkat + deskripsi 1 baris per langkah.
+- Testimoni ditampilkan sebagai chat_bubble mockup (gaya screenshot chat WhatsApp: foto kecil bukti + bubble teks + nama pengirim), bukan kutipan teks polos.
+- Section harga pakai price_box: harga coret di atas (kecil, dicoret), harga promo di bawahnya (sangat besar, warna mencolok), plus badge "HEMAT Rp..." dan kotak warning kecil soal stok/waktu terbatas.
+- PALET WARNA: tentukan berdasarkan style profile hasil analisa gambar kalau ada; kalau belum ada, pilih palet yang lazim & masuk akal untuk kategori produk ini (mis. herbal/kesehatan → hijau tua & emas; skincare/kecantikan → pink/putih/gold; gadget/elektronik → hitam/biru elektrik/putih; makanan → merah/kuning cerah; fashion → palet netral/monokrom dengan satu aksen kuat) — tetap pertahankan prinsip kontras tinggi khas hard-selling, bukan warna kalem.
+- Foto produk selalu jadi hero visual di tengah dengan efek highlight/glow, dikelilingi elemen pendukung yang relevan dengan kategori (herbal → bahan alami; gadget → aksesoris/UI mockup; fashion → styling props; dst).
+- Boleh tambahkan overlay type "arrow" untuk menunjuk ke elemen penting (mis. ke area form) kalau section-nya CTA/harga/form.`;
+
+
 const SECTIONS = [
   {
     id: 'headline',
     title: '1. Headline',
-    desc: 'Klaim utama + badge diskon 50% + badge Free Ongkir. Overlay pertama yang dilihat calon buyer, harus berhenti-scroll.',
-    guidance: 'Overlay wajib: headline_text (klaim utama, singkat & kuat), diskon_badge ("DISKON {diskon}" gaya badge mencolok, biasanya pojok atas), free_ongkir_badge (badge terpisah, hanya jika free ongkir aktif). Background: foto produk hero, komposisi dramatis, jadi pusat perhatian.'
+    desc: 'Ribbon diskon 50% + free ongkir di pojok atas, headline masalah multi-warna, foto model kesakitan, deretan badge gejala.',
+    guidance: 'Overlay wajib: (1) ribbon_diskon (type ribbon, pojok kiri atas, mis. "PROMO DISKON {diskon}"), (2) ribbon_ongkir (type ribbon, pojok kanan atas, warna beda dari ribbon diskon, mis. "GRATIS ONGKOS KIRIM"), (3) headline_text (baris headline masalah utama, pecah 2-3 baris beda warna kuning/putih/merah di atas background gelap, sertakan icon warning kecil di depan baris pertama), (4) subheadline_urgency (mis. "SEGERA ATASI SEKARANG JUGA", background_box merah), (5) 3-5 icon_badge berjejer untuk gejala/masalah terkait produk (badge bulat kecil + label singkat di bawahnya), (6) closing_banner (banner sempit di bagian bawah section, background merah tua, teks peringatan singkat + 1 icon). Background: foto orang yang mengalami masalah (mis. memegang area yang sakit), ekspresi jelas, area masalah dikasih highlight visual di background_image_prompt (glow/lingkaran merah transparan).'
   },
   {
     id: 'pain',
     title: '2. Pain',
-    desc: 'Menampilkan masalah yang dialami calon buyer supaya mereka merasa "ini gue banget".',
-    guidance: 'Overlay: pain_headline (kalimat empati/masalah utama) + 2-3 pain_point_item (masing-masing satu masalah singkat, bisa pakai bullet/icon style). Background: suasana yang menggambarkan ketidaknyamanan/masalah, warna lebih muted/gelap dibanding section lain.'
+    desc: 'Headline besar "cukup satu tindakan langsung tuntas", foto produk hero + badge gejala di sekitarnya, trust badge & foto keluarga.',
+    guidance: 'Overlay wajib: (1) pain_headline multi-baris multi-warna besar menegaskan solusi cepat (senada dengan headline_text di section 1, framing sesuai kategori produk — mis. "CUKUP {AKSI SINGKAT} LANGSUNG {HASIL}", jangan paksakan pola "sampai ke akarnya" kalau bukan produk yang relevan), (2) pain_body_text singkat (1-2 kalimat empati+transisi ke produk), (3) checklist_benefit 2-3 baris singkat dengan icon centang, (4) 3-5 icon_badge melingkar di sekeliling foto produk untuk tiap masalah/kebutuhan yang diatasi (ambil dari data Pain Points), (5) trust_badge_row (baris kecil badge relevan kategori, mis. "Original", "Bergaransi", "Aman Digunakan" — sesuaikan, jangan paksakan "100% Herbal" kalau bukan produk herbal), (6) opsional caption pendukung dekat foto pengguna produk. Background: foto produk sebagai hero dengan efek glow/highlight, dikelilingi elemen visual pendukung yang relevan dengan kategori produk, warna dominan sesuai style profile/kategori.'
   },
   {
     id: 'solusi',
     title: '3. Solusi',
-    desc: 'Transisi dari masalah ke solusi — produk sebagai jawaban.',
-    guidance: 'Overlay: solusi_headline (mis. "Solusinya Ada Di Sini") + solusi_text (penjelasan singkat kenapa produk ini solusinya). Background: foto produk mulai jadi sorotan, transisi warna dari muted (pain) ke cerah/positif.'
+    desc: '"Kenapa harus produk ini" — headline kualitas/keunggulan + checklist alasan dengan icon.',
+    guidance: 'Overlay wajib: (1) solusi_headline besar 2 baris menegaskan kualitas produk sesuai kategorinya (mis. herbal: "FORMULA ALAMI — AMAN & BERKUALITAS"; gadget: "TEKNOLOGI TERDEPAN — CEPAT & AWET"; fashion: "DESAIN PREMIUM — NYAMAN & TAHAN LAMA" — pilih framing yang sesuai kategori produk aktual), (2) solusi_subheadline (mis. "Kenapa Harus {Nama Produk}?"), (3) 4-5 checklist_item masing-masing icon + judul singkat + deskripsi 1 baris berisi alasan nyata dari data produk (bukan template kosong), (4) closing_banner tipis di bawah section berisi kalimat transisi singkat. Background: foto produk di tengah dengan latar pendukung yang relevan dengan kategori (herbal→nature/rempah, gadget→studio/tech mockup, fashion→styling props), pencahayaan sesuai mood produk, ada satu badge kecil menonjol dekat produk.'
   },
   {
     id: 'benefit',
     title: '4. Benefit',
-    desc: 'List keunggulan produk dalam bentuk poin-poin visual.',
-    guidance: 'Overlay: benefit_headline + satu overlay type "icon"+"text" berpasangan untuk tiap item benefit (buat overlay terpisah per item, posisi tersusun rapi grid/list, jangan bertumpuk). Background: netral/terang supaya teks benefit tetap terbaca jelas.'
+    desc: 'Kandungan/fitur/komponen utama produk sebagai kartu-kartu berikon foto, badge unggulan.',
+    guidance: 'Overlay wajib: (1) benefit_headline 2 baris besar menegaskan keunggulan utama produk (istilah menyesuaikan kategori: "kandungan" untuk herbal/skincare/makanan, "fitur" untuk gadget/digital, "material/bahan" untuk fashion), (2) label kecil pembuka daftar (mis. "Kandungan Utama:" / "Fitur Unggulan:" — sesuaikan), (3) satu overlay per item utama (3-4 item, ambil dari data deskripsi/benefit produk), masing-masing berupa pasangan icon + judul + deskripsi singkat 1 baris, disusun berjejer rapi (grid/list, jangan tumpuk), (4) satu badge lingkaran besar dekat produk merangkum klaim utama (mis. persentase/kualitas/garansi sesuai data produk), (5) closing_banner bawah dengan headline singkat penutup. Background: foto produk di tengah dikelilingi elemen visual yang relevan dengan kategori & item yang ditonjolkan, warna dominan mengikuti palet section 3.'
   },
   {
     id: 'deskripsi',
     title: '5. Deskripsi Produk',
-    desc: 'Detail produk: kandungan, cara pakai, spesifikasi singkat.',
-    guidance: 'Overlay: deskripsi_headline + deskripsi_body (ringkas, enak dibaca) + opsional badge kecil untuk sertifikasi/BPOM/halal jika relevan. Background: foto produk dari sudut detail (label, tekstur, kemasan).'
+    desc: 'Cara pakai bergaya numbered_step 3 langkah + foto produk, ditutup badge manfaat.',
+    guidance: 'Overlay wajib: (1) deskripsi_headline (mis. "CARA PAKAI — Mudah & Praktis"), (2) deskripsi_subtext singkat 1 baris, (3) TEPAT 3 numbered_step (lingkaran angka 1/2/3 + judul langkah singkat + deskripsi 1 baris tiap langkah, urutan dari kiri/atas ke kanan/bawah), (4) 3-4 icon_badge kecil di baris paling bawah merangkum manfaat (mis. Bahan Alami, Aman Digunakan, Meredakan Cepat). Background: foto produk besar di satu sisi, ilustrasi/foto aplikasi cara pakai di sisi lain sesuai urutan step.'
   },
   {
     id: 'testimoni',
     title: '6. Testimoni',
-    desc: 'Bukti sosial dari pembeli lain.',
-    guidance: 'Overlay: testimoni_headline + satu set overlay per testimoni (nama, rating bintang sebagai text/icon, kutipan singkat). Buat card-style background_box terpisah untuk tiap testimoni agar jelas batasnya. Background: bersih, tidak ramai, supaya fokus ke testimoni.'
+    desc: 'Mockup chat WhatsApp berisi foto bukti + kutipan testimoni, bukan kutipan teks polos.',
+    guidance: 'Overlay wajib: (1) testimoni_headline 2 baris (mis. "Testimoni Pelanggan yang PUAS!" + subtext kecil di bawahnya), (2) 2-3 overlay type chat_bubble, masing-masing berisi: foto kecil (produk/kondisi setelah pakai) + nama pengirim (format "Nama - Kota") + isi pesan singkat gaya chat casual, disusun berjejer seperti screenshot percakapan. Background: netral terang atau hijau tua polos supaya mockup chat menonjol jelas.'
   },
   {
     id: 'harga',
     title: '7. Harga',
-    desc: 'Bandingkan harga coret vs harga promo, tekankan hemat & urgensi.',
-    guidance: 'Overlay: harga_asli (dengan efek dicoret via styling/label), harga_promo (besar & mencolok), badge_hemat (mis. "Hemat 50%"), diskon_urgency_text (mis. "Promo terbatas hari ini"). Background: sederhana, warna kontras tinggi supaya angka harga paling menonjol.'
+    desc: 'Banner "PROMO SPESIAL" merah + price_box harga coret vs promo + badge hemat + warning stok terbatas + arrow ke form.',
+    guidance: 'Overlay wajib: (1) ribbon/banner atas "PROMO SPESIAL" dengan icon sirine/alarm, background merah mencolok, (2) satu overlay type price_box berisi: harga_asli (kecil, dicoret) di atas, harga_promo (sangat besar, warna mencolok) di bawahnya, badge "HEMAT {selisih}" menonjol, (3) opsional badge bonus di samping price_box kalau ada bonus produk, (4) warning_box kecil (background putih/kuning, border merah) berisi teks urgensi stok/waktu terbatas, (5) 2-3 overlay type arrow mengarah ke bawah/ke area form, (6) baris kecil trust_badge (mis. Belanja Aman, Kualitas Terjamin, Bahan Alami, Bergaransi) di paling bawah. Background: hijau tua/gelap supaya price_box putih & ribbon merah kontras maksimal.'
   },
   {
     id: 'form',
     title: '8. Isian Form (Embed dari OO)',
     desc: 'Area untuk form checkout/order embed. AI hanya bikin background & judul, BUKAN form-nya.',
-    guidance: 'Overlay: form_headline (mis. "Isi Data untuk Pesan Sekarang") + form_subtext singkat (mis. "Stok terbatas, konfirmasi via WhatsApp"). WAJIB isi embed_slot dengan enabled=true, area kosong luas di tengah/bawah untuk tempat form asli ditempel manual. Background: tenang, tidak mengganggu, beri ruang kosong jelas untuk form.'
+    guidance: 'Overlay: form_headline (mis. "Isi Data untuk Pesan Sekarang") + form_subtext singkat (mis. "Stok terbatas, konfirmasi via WhatsApp"). WAJIB isi embed_slot dengan enabled=true, area kosong luas di tengah/bawah untuk tempat form asli (pilihan produk, data penerima, pengiriman, metode pembayaran, tombol beli) ditempel manual. Background: tenang/lebih polos dibanding section lain (putih/krem/gradasi lembut) supaya form yang di-embed tetap kontras & mudah dibaca, beri ruang kosong jelas.'
   },
   {
     id: 'cta',
     title: '9. CTA',
-    desc: 'Dorongan terakhir sebelum closing — urgensi + tombol aksi.',
-    guidance: 'Overlay: cta_headline (dorongan kuat terakhir), cta_button_text (teks tombol, mis. isi dari data CTA), urgency_badge (mis. "Stok Terbatas" / "Free Ongkir Hari Ini"). Background: energik, warna paling berani dari seluruh section, mengarahkan mata ke tombol CTA.'
+    desc: 'Tombol aksi besar bergaya tebal + urgensi penutup, warna paling berani.',
+    guidance: 'Overlay wajib: (1) cta_headline dorongan terakhir (singkat, tegas), (2) satu overlay besar berupa tombol CTA (type shape/badge sebagai background tombol + text di atasnya, mis. "Beli Harga DISKON" dengan icon panah), warna paling kontras dari seluruh section (mis. hijau terang/emas di atas hijau tua), (3) urgency_badge kecil di atas/bawah tombol (mis. "Stok Terbatas Hari Ini"). Background: warna paling berani & energik dari seluruh LP, arahkan komposisi supaya mata langsung tertuju ke tombol CTA.'
   }
 ];
 
@@ -584,6 +613,7 @@ function getAspect(){
 function collectProductData(){
   return {
     nama: $('pNama').value.trim(),
+    kategori: $('pKategori').value,
     tagline: $('pTagline').value.trim(),
     hargaAsli: $('pHargaAsli').value.trim(),
     hargaPromo: $('pHargaPromo').value.trim(),
@@ -669,6 +699,7 @@ async function analyzeImage(){
 async function autoGenerateCopy(){
   const statusEl = $('statusAutoCopy');
   const nama = $('pNama').value.trim();
+  const kategori = $('pKategori').value;
   const tagline = $('pTagline').value.trim();
   const hargaAsli = $('pHargaAsli').value.trim();
   const hargaPromo = $('pHargaPromo').value.trim();
@@ -682,10 +713,11 @@ async function autoGenerateCopy(){
 
   setStatus(statusEl, 'pending', 'Menyusun copy (pain → CTA)...');
 
-  const prompt = `Kamu adalah copywriter landing page e-commerce Indonesia untuk produk kesehatan/herbal.
+  const prompt = `Kamu adalah copywriter landing page e-commerce Indonesia bergaya hard-selling, untuk kategori produk: ${kategori}.
 
 KONTEKS PRODUK:
 Nama Produk: ${nama}
+Kategori: ${kategori}
 Tagline: ${tagline || '(belum ada, boleh kamu usulkan singkat)'}
 Harga Coret: ${hargaAsli || '-'}
 Harga Promo: ${hargaPromo || '-'}
@@ -707,6 +739,7 @@ Hasilkan copy landing page dalam format JSON PERSIS seperti ini, tanpa markdown/
   "cta": "1 kalimat CTA yang kuat, sebutkan urgensi (mis. promo terbatas) tanpa klaim palsu"
 }
 Buat 3 item testimoni contoh. INGAT: testimoni ini adalah PLACEHOLDER, tulis dengan gaya wajar tapi jangan buat terasa seperti fakta yang diklaim benar-benar terjadi.
+Sesuaikan semua istilah dan framing dengan kategori produk (${kategori}) — jangan gunakan istilah/klaim herbal kalau kategorinya bukan Herbal/Kesehatan.
 Jangan membuat klaim kesehatan/medis yang berlebihan, menyesatkan, atau tidak bisa dipertanggungjawabkan.`;
 
   try{
@@ -737,6 +770,7 @@ function buildSectionPrompt(section){
   const aspect = getAspect();
 
   let productBlock = `Nama Produk: ${data.nama || '-'}
+Kategori Produk: ${data.kategori || '-'}
 Tagline: ${data.tagline || '-'}
 Harga Coret: ${data.hargaAsli || '-'}
 Harga Promo: ${data.hargaPromo || '-'}
@@ -769,6 +803,9 @@ KETENTUAN CANVAS:
 STYLE PROFILE (acuan gaya visual dari gambar referensi):
 ${styleProfile}
 
+ATURAN GAYA VISUAL WAJIB (ikuti pola ini, style profile di atas dipakai untuk detail warna/mood spesifik, bukan untuk mengubah pola dasarnya):
+${BOMBASTIC_STYLE_DIRECTIVE}
+
 DATA PRODUK & COPY:
 ${productBlock}
 
@@ -776,6 +813,7 @@ TUGAS UNTUK SECTION INI — "${section.title}":
 ${section.guidance}
 
 INSTRUKSI TAMBAHAN:
+- WAJIB sesuaikan istilah, framing, dan palet warna dengan "Kategori Produk" di atas. Jangan gunakan istilah/klaim khas herbal (mis. "100% alami", "formula herbal") kalau kategorinya bukan Herbal/Kesehatan.
 - "background.image_prompt" dan "background.negative_prompt" ditulis dalam Bahasa Inggris, deskriptif, cukup detail untuk dipakai langsung di image-generation model, dan konsisten dengan style profile di atas.
 - Semua "content" pada overlay ditulis dalam Bahasa Indonesia, singkat, dan menjual (copywriting ala landing page e-commerce Indonesia).
 - Atur "position" tiap overlay supaya tidak saling tumpang tindih dan enak dibaca di canvas ${aspect.width}x${aspect.height}.
