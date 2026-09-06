@@ -363,6 +363,13 @@
         <input type="checkbox" id="pFreeOngkir" checked>
         <label style="margin:0;text-transform:none;font-weight:500;color:var(--ink);" for="pFreeOngkir">Tampilkan badge Free Ongkir</label>
       </div>
+      <div class="field" style="border-top:1px solid var(--line);padding-top:16px;">
+        <div class="row-actions">
+          <button id="btnAutoCopy">Generate Konten Otomatis (Pain → CTA)</button>
+          <span class="hint">Pakai Style Profile + Nama/Tagline/Harga di atas. Hasilnya tetap bisa diedit manual di bawah.</span>
+        </div>
+        <div class="status" id="statusAutoCopy"></div>
+      </div>
       <div class="field">
         <label for="pPain">Pain Points (satu per baris)</label>
         <textarea id="pPain" rows="3" placeholder="Sakit gigi bikin nggak bisa tidur&#10;Sudah minum obat tapi kambuh lagi&#10;Takut ke dokter gigi"></textarea>
@@ -381,6 +388,7 @@
       </div>
       <div class="field">
         <label for="pTestimoni">Testimoni (format: Nama | Rating | Isi — satu per baris)</label>
+        <div class="hint" style="color:var(--err);margin-top:0;margin-bottom:6px;">⚠️ Kalau kolom ini diisi otomatis oleh AI, itu placeholder buat cek layout — wajib diganti testimoni asli dari pembeli sebelum landing page dipublikasikan. Testimoni palsu berisiko melanggar aturan perlindungan konsumen.</div>
         <textarea id="pTestimoni" rows="3" placeholder="Bu Sari, Bekasi | 5 | Baru diteteskan sekali langsung reda, nggak nyangka&#10;Pak Anto, Solo | 5 | Anak saya jadi berani sikat gigi lagi"></textarea>
       </div>
       <div class="field">
@@ -658,6 +666,71 @@ async function analyzeImage(){
   }
 }
 
+async function autoGenerateCopy(){
+  const statusEl = $('statusAutoCopy');
+  const nama = $('pNama').value.trim();
+  const tagline = $('pTagline').value.trim();
+  const hargaAsli = $('pHargaAsli').value.trim();
+  const hargaPromo = $('pHargaPromo').value.trim();
+  const diskon = $('pDiskon').value.trim();
+  const styleProfile = $('styleProfile').value.trim();
+
+  if(!nama){
+    setStatus(statusEl, 'err', 'Isi minimal Nama Produk dulu di atas biar hasilnya relevan.');
+    return;
+  }
+
+  setStatus(statusEl, 'pending', 'Menyusun copy (pain → CTA)...');
+
+  const prompt = `Kamu adalah copywriter landing page e-commerce Indonesia untuk produk kesehatan/herbal.
+
+KONTEKS PRODUK:
+Nama Produk: ${nama}
+Tagline: ${tagline || '(belum ada, boleh kamu usulkan singkat)'}
+Harga Coret: ${hargaAsli || '-'}
+Harga Promo: ${hargaPromo || '-'}
+Diskon: ${diskon || '-'}
+
+STYLE PROFILE / MOOD VISUAL (dari analisa gambar referensi, jadikan acuan nada bahasa - mis. kalau mood-nya "clean & medis" pakai bahasa lebih formal-terpercaya, kalau "hangat & tradisional" boleh lebih personal):
+${styleProfile || '(belum ada analisa, pakai nada default: hangat, terpercaya, ala produk herbal keluarga)'}
+
+TUGAS:
+Hasilkan copy landing page dalam format JSON PERSIS seperti ini, tanpa markdown/backtick, tanpa penjelasan tambahan:
+{
+  "pain": ["3 baris pain point, masing-masing satu kalimat singkat masalah yang dialami calon buyer"],
+  "solusi": "1-2 kalimat solusi yang ditawarkan produk ini, terhubung ke pain point di atas",
+  "benefit": ["4-6 baris benefit singkat, masing-masing beberapa kata saja"],
+  "deskripsi": "1 paragraf singkat (3-4 kalimat) deskripsi produk: kandungan/cara pakai secara umum, jangan mengarang klaim medis berlebihan atau klaim yang belum tentu benar",
+  "testimoni": [
+    {"nama": "nama contoh + kota, format 'Bu/Pak Nama, Kota'", "rating": 5, "isi": "kutipan testimoni contoh singkat"}
+  ],
+  "cta": "1 kalimat CTA yang kuat, sebutkan urgensi (mis. promo terbatas) tanpa klaim palsu"
+}
+Buat 3 item testimoni contoh. INGAT: testimoni ini adalah PLACEHOLDER, tulis dengan gaya wajar tapi jangan buat terasa seperti fakta yang diklaim benar-benar terjadi.
+Jangan membuat klaim kesehatan/medis yang berlebihan, menyesatkan, atau tidak bisa dipertanggungjawabkan.`;
+
+  try{
+    const raw = await callGemini([{ text: prompt }]);
+    const cleaned = stripJsonFence(raw);
+    const parsed = JSON.parse(cleaned);
+
+    if(Array.isArray(parsed.pain)) $('pPain').value = parsed.pain.join('\n');
+    if(typeof parsed.solusi === 'string') $('pSolusi').value = parsed.solusi;
+    if(Array.isArray(parsed.benefit)) $('pBenefit').value = parsed.benefit.join('\n');
+    if(typeof parsed.deskripsi === 'string') $('pDeskripsi').value = parsed.deskripsi;
+    if(Array.isArray(parsed.testimoni)){
+      $('pTestimoni').value = parsed.testimoni
+        .map(t => `${t.nama || 'Nama Pembeli'} | ${t.rating || 5} | ${t.isi || ''}`)
+        .join('\n');
+    }
+    if(typeof parsed.cta === 'string') $('pCta').value = parsed.cta;
+
+    setStatus(statusEl, 'ok', 'Konten terisi otomatis — cek & edit sesuai kebutuhan, terutama bagian testimoni.');
+  }catch(e){
+    setStatus(statusEl, 'err', 'Gagal: ' + e.message);
+  }
+}
+
 function buildSectionPrompt(section){
   const data = collectProductData();
   const styleProfile = $('styleProfile').value.trim() || '(belum ada analisa gambar — pakai asumsi gaya bersih, modern, warna hangat sesuai produk herbal/kesehatan)';
@@ -830,6 +903,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderSectionCards();
   $('btnTest').addEventListener('click', testConnection);
   $('btnAnalyze').addEventListener('click', analyzeImage);
+  $('btnAutoCopy').addEventListener('click', autoGenerateCopy);
   $('refImage').addEventListener('change', handleImageUpload);
   $('btnGenAll').addEventListener('click', generateAll);
   $('btnDownloadAll').addEventListener('click', downloadAll);
