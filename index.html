@@ -654,13 +654,33 @@
           </div>
         </div>
         <div class="field">
+          <label for="vProductImage">Foto Produk (dianalisa AI untuk bikin deskripsi lebih presisi)</label>
+          <input type="file" id="vProductImage" accept="image/*">
+          <img id="vProductPreview" class="preview-img">
+          <div class="hint">Upload foto produk asli — AI akan "lihat" bentuk, kemasan, warna, dan detail visualnya, bukan cuma nebak dari nama produk.</div>
+        </div>
+        <div class="field">
           <label for="vDeskripsi">Deskripsi Singkat Produk</label>
           <textarea id="vDeskripsi" rows="3" placeholder="Apa produknya, siapa target pembelinya, masalah apa yang diselesaikan"></textarea>
           <div class="row-actions" style="margin-top:8px;">
-            <button class="secondary small" id="btnAutoDeskripsiVideo">Generate Deskripsi Otomatis</button>
-            <span class="hint" id="statusAutoDeskripsiVideoHint">Isi minimal Nama Produk dulu.</span>
+            <button class="secondary small" id="btnAutoDeskripsiVideo">Generate Deskripsi dari Foto</button>
+            <span class="hint" id="statusAutoDeskripsiVideoHint">Upload foto produk dulu di atas.</span>
           </div>
           <div class="status" id="statusAutoDeskripsiVideo"></div>
+        </div>
+        <div class="field">
+          <label for="vTalentImage">Foto Model/Talent (opsional)</label>
+          <input type="file" id="vTalentImage" accept="image/*">
+          <img id="vTalentPreview" class="preview-img">
+          <div class="row-actions" style="margin-top:8px;">
+            <button class="secondary small" id="btnAnalyzeTalent">Deskripsikan dari Foto</button>
+          </div>
+          <div class="status" id="statusTalent"></div>
+        </div>
+        <div class="field">
+          <label for="vTalentDeskripsi">Deskripsi Model/Talent (opsional)</label>
+          <textarea id="vTalentDeskripsi" rows="2" placeholder="mis. wanita ~25-30 tahun, gaya casual, ekspresi ramah — kosongkan kalau video tidak menampilkan orang"></textarea>
+          <div class="hint">Opsional. Isi manual, atau upload foto di atas lalu klik "Deskripsikan dari Foto". Dipakai sebagai referensi visual talent supaya konsisten di tiap scene.</div>
         </div>
         <div class="grid3">
           <div class="field">
@@ -681,17 +701,9 @@
           </div>
         </div>
         <div class="field">
-          <label for="vJumlahScene">Jumlah Scene</label>
-          <select id="vJumlahScene">
-            <option value="2">2 scene — Hook → Solution+CTA (super pendek)</option>
-            <option value="3" selected>3 scene — Hook → Problem → Solution+CTA</option>
-            <option value="4">4 scene — Hook → Problem → Solution → CTA</option>
-            <option value="5">5 scene — Hook → Problem → Agitate → Solution → CTA</option>
-            <option value="6">6 scene — + Benefit/Proof sebelum CTA</option>
-            <option value="7">7 scene — + Social Proof/Testimonial</option>
-            <option value="8">8 scene — + Social Proof/Testimonial + Urgency/Offer</option>
-          </select>
-          <div class="hint" id="sceneStructureHint">Makin banyak scene, makin banyak "amunisi psikologis" sebelum CTA — bukan cuma diperpanjang durasinya doang.</div>
+          <label>Jumlah Scene (otomatis)</label>
+          <div class="mono" id="vJumlahSceneDisplay" style="padding:10px 12px;background:var(--bg-inset);border:1px solid var(--line);border-radius:4px;font-size:14px;">3 scene</div>
+          <div class="hint" id="sceneStructureHint">Dihitung otomatis dari Durasi Total ÷ Durasi per Scene (dibulatkan, dibatasi 2-8 scene).</div>
         </div>
       </div>
     </section>
@@ -728,11 +740,12 @@
         <div class="row-actions">
           <button id="btnGenerateVideo">Generate Creative JSON</button>
           <button class="secondary" id="btnRegenerateVideo" style="display:none;">Generate Variasi Baru</button>
-          <button class="secondary small" id="btnCopyVideo" style="display:none;">Copy</button>
+          <button class="secondary small" id="btnCopyVideo" style="display:none;">Copy Semua JSON</button>
           <button class="secondary small" id="btnResetWizard">Reset Wizard</button>
         </div>
         <div class="status" id="statusVideo"></div>
-        <pre class="output" id="videoOutput"></pre>
+        <pre class="output" id="videoOutputRaw"></pre>
+        <div id="videoOutputBlocks"></div>
       </div>
     </section>
 
@@ -1216,20 +1229,58 @@ function downloadAll(){
 /* ---------------------------------------------------------
    IMAGE UPLOAD HANDLER
 --------------------------------------------------------- */
+function readImageAsBase64(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result; // data:mime;base64,....
+      const [meta, b64] = result.split(',');
+      const mime = meta.match(/data:(.*);base64/)[1];
+      resolve({ mime, base64: b64, dataUrl: result });
+    };
+    reader.onerror = () => reject(new Error('Gagal membaca file gambar.'));
+    reader.readAsDataURL(file);
+  });
+}
+
 function handleImageUpload(e){
   const file = e.target.files[0];
   if(!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    const result = reader.result; // data:mime;base64,....
-    const [meta, b64] = result.split(',');
-    refImageMime = meta.match(/data:(.*);base64/)[1];
-    refImageBase64 = b64;
+  readImageAsBase64(file).then(({ mime, base64, dataUrl }) => {
+    refImageMime = mime;
+    refImageBase64 = base64;
     const preview = $('refPreview');
-    preview.src = result;
+    preview.src = dataUrl;
     preview.style.display = 'block';
-  };
-  reader.readAsDataURL(file);
+  });
+}
+
+let vProductImageBase64 = null;
+let vProductImageMime = null;
+function handleVideoProductImageUpload(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  readImageAsBase64(file).then(({ mime, base64, dataUrl }) => {
+    vProductImageMime = mime;
+    vProductImageBase64 = base64;
+    const preview = $('vProductPreview');
+    preview.src = dataUrl;
+    preview.style.display = 'block';
+  });
+}
+
+let vTalentImageBase64 = null;
+let vTalentImageMime = null;
+function handleTalentImageUpload(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  readImageAsBase64(file).then(({ mime, base64, dataUrl }) => {
+    vTalentImageMime = mime;
+    vTalentImageBase64 = base64;
+    const preview = $('vTalentPreview');
+    preview.src = dataUrl;
+    preview.style.display = 'block';
+  });
 }
 
 /* ---------------------------------------------------------
@@ -1359,16 +1410,27 @@ const SCENE_STRUCTURES = {
   8: ['Hook', 'Problem', 'Agitate', 'Solution', 'Benefit/Proof', 'Social Proof/Testimonial', 'Urgency/Offer', 'CTA']
 };
 
+function computeSceneCount(){
+  const totalMatch = ($('vDurasiTotal').value.match(/[\d.]+/) || [])[0];
+  const perSceneMatch = ($('vDurasiScene').value.match(/[\d.]+/) || [])[0];
+  const total = parseFloat(totalMatch);
+  const perScene = parseFloat(perSceneMatch);
+  if(!total || !perScene) return 3;
+  const n = Math.round(total / perScene);
+  return Math.max(2, Math.min(8, n));
+}
+
 function getSceneStructure(){
-  const n = Math.max(2, Math.min(8, parseInt($('vJumlahScene').value, 10) || 3));
-  return SCENE_STRUCTURES[n];
+  return SCENE_STRUCTURES[computeSceneCount()];
 }
 
 function updateSceneStructureHint(){
   const structure = getSceneStructure();
   const preview = structure.join(' → ');
+  const displayEl = $('vJumlahSceneDisplay');
+  if(displayEl) displayEl.textContent = `${structure.length} scene`;
   const hintEl = $('sceneStructureHint');
-  if(hintEl) hintEl.textContent = `Struktur: ${preview}`;
+  if(hintEl) hintEl.textContent = `Dihitung otomatis dari Durasi Total ÷ Durasi per Scene (dibulatkan, dibatasi 2-8 scene). Struktur: ${preview}`;
   const subEl = $('generateVideoSub');
   if(subEl){
     const pill = subEl.querySelector('.selected-pill');
@@ -1382,10 +1444,11 @@ function collectVideoProduct(){
     nama: $('vNama').value.trim(),
     kategori: $('vKategori').value,
     deskripsi: $('vDeskripsi').value.trim(),
+    talentDeskripsi: $('vTalentDeskripsi').value.trim(),
     ratio: $('vRatio').value,
     durasiTotal: $('vDurasiTotal').value.trim() || '24s',
     durasiScene: $('vDurasiScene').value.trim() || '8s',
-    jumlahScene: Math.max(2, Math.min(8, parseInt($('vJumlahScene').value, 10) || 3))
+    jumlahScene: computeSceneCount()
   };
 }
 
@@ -1394,26 +1457,53 @@ async function autoGenerateVideoDescription(){
   const nama = $('vNama').value.trim();
   const kategori = $('vKategori').value;
 
-  if(!nama){
-    setStatus(statusEl, 'err', 'Isi minimal Nama Produk dulu di atas biar hasilnya relevan.');
+  if(!vProductImageBase64){
+    setStatus(statusEl, 'err', 'Upload foto produk dulu di atas biar hasilnya presisi.');
     return;
   }
 
-  setStatus(statusEl, 'pending', 'Menyusun deskripsi produk...');
+  setStatus(statusEl, 'pending', 'Menganalisa foto produk...');
 
   const prompt = `Kamu adalah Meta Ads Creative Strategist untuk kategori produk: ${kategori}.
 
-PRODUK: ${nama}
-KATEGORI: ${kategori}
+Lihat foto produk ini dengan detail: bentuk fisik, kemasan, warna, tekstur, ukuran kira-kira, dan elemen visual lain yang terlihat.
 
-TUGAS: Tulis deskripsi singkat produk ini dalam 1 paragraf (3-4 kalimat) Bahasa Indonesia: apa produknya, siapa target pembelinya, dan masalah/kebutuhan apa yang diselesaikan. Fokus ke konteks yang berguna buat menentukan buying motive & creative video ads, bukan copy jualan. Jangan mengarang klaim medis/khasiat berlebihan atau klaim yang belum tentu benar. Sesuaikan istilah dengan kategori produknya.
+${nama ? `Nama Produk: ${nama}` : '(nama produk belum diisi, boleh diabaikan)'}
+Kategori: ${kategori}
+
+TUGAS: Tulis deskripsi singkat produk ini dalam 1 paragraf (3-4 kalimat) Bahasa Indonesia, gabungkan apa yang BENAR-BENAR terlihat di foto dengan konteks nama/kategori di atas: bentuk fisik produk, kesan kualitas/material dari visualnya, kira-kira siapa target pembelinya, dan masalah/kebutuhan apa yang kemungkinan diselesaikan. Jangan mengarang klaim medis/khasiat berlebihan atau klaim yang tidak bisa disimpulkan dari foto.
 
 Balas HANYA dengan teks paragraf deskripsinya saja, tanpa markdown, tanpa judul, tanpa tanda kutip, tanpa penjelasan tambahan.`;
 
   try{
-    const out = await callGemini([{ text: prompt }]);
+    const out = await callGemini([
+      { text: prompt },
+      { inline_data: { mime_type: vProductImageMime, data: vProductImageBase64 } }
+    ]);
     $('vDeskripsi').value = out.trim().replace(/^"+|"+$/g, '');
-    setStatus(statusEl, 'ok', 'Deskripsi terisi otomatis — cek & edit sesuai kebutuhan.');
+    setStatus(statusEl, 'ok', 'Deskripsi terisi otomatis dari analisa foto — cek & edit sesuai kebutuhan.');
+  }catch(e){
+    setStatus(statusEl, 'err', 'Gagal: ' + e.message);
+  }
+}
+
+async function analyzeTalentImage(){
+  const statusEl = $('statusTalent');
+  if(!vTalentImageBase64){
+    setStatus(statusEl, 'err', 'Upload foto talent dulu.');
+    return;
+  }
+  setStatus(statusEl, 'pending', 'Menganalisa foto talent...');
+
+  const prompt = `Lihat foto orang di gambar ini. Tulis deskripsi fisik singkat (1-2 kalimat) dalam Bahasa Indonesia yang berguna sebagai referensi visual talent untuk video ads: perkiraan gender & rentang usia, gaya rambut/pakaian yang terlihat, kesan ekspresi/vibe keseluruhan. Balas HANYA teks deskripsinya, tanpa markdown, tanpa penjelasan tambahan.`;
+
+  try{
+    const out = await callGemini([
+      { text: prompt },
+      { inline_data: { mime_type: vTalentImageMime, data: vTalentImageBase64 } }
+    ]);
+    $('vTalentDeskripsi').value = out.trim().replace(/^"+|"+$/g, '');
+    setStatus(statusEl, 'ok', 'Deskripsi talent terisi — boleh diedit.');
   }catch(e){
     setStatus(statusEl, 'err', 'Gagal: ' + e.message);
   }
@@ -1475,7 +1565,8 @@ function selectMotive(motive, chipEl){
   $('formatChips').innerHTML = '';
   $('formatSelectedPill').style.display = 'none';
   $('generateVideoSection').classList.remove('active');
-  $('videoOutput').classList.remove('show');
+  $('videoOutputRaw').classList.remove('show');
+  $('videoOutputBlocks').innerHTML = '';
   $('btnRegenerateVideo').style.display = 'none';
   $('btnCopyVideo').style.display = 'none';
 }
@@ -1533,7 +1624,8 @@ function selectFormat(format, chipEl){
   $('formatSelectedPill').style.display = 'inline-block';
   $('formatSelectedPill').textContent = format;
   $('generateVideoSection').classList.add('active');
-  $('videoOutput').classList.remove('show');
+  $('videoOutputRaw').classList.remove('show');
+  $('videoOutputBlocks').innerHTML = '';
   $('btnRegenerateVideo').style.display = 'none';
   $('btnCopyVideo').style.display = 'none';
 }
@@ -1581,6 +1673,7 @@ KONTEKS YANG SUDAH DITENTUKAN (jangan diubah, jangan tanya ulang):
 Produk: ${data.nama}
 Kategori: ${data.kategori}
 Deskripsi: ${data.deskripsi || '-'}
+Model/Talent: ${data.talentDeskripsi || 'Tidak ada talent spesifik ditentukan — boleh pakai product shot / tangan model generik / tanpa talent, sesuaikan dengan format creative yang dipilih'}
 Buying Motive Terpilih: ${videoState.selectedMotive}
 Creative Format Terpilih: ${videoState.selectedFormat}
 
@@ -1590,6 +1683,8 @@ ${structureLines}
 Catatan pacing: makin banyak jumlah scene, makin banyak "amunisi psikologis" yang perlu digali sebelum CTA (bukan cuma beat yang sama diperpanjang durasinya) — tiap scene harus punya kontribusi psikologis yang jelas dan berbeda dari scene lain.
 
 ATURAN VISUAL — tiap scene WAJIB berisi: visual description, camera movement, facial expression (kalau relevan), lighting, environment, composition/motion, text overlay, voice over, sound effect, background music, transition. Field yang tidak relevan boleh dikosongkan string kosong, tapi field-nya tetap harus ada.
+
+ATURAN TALENT: kalau Model/Talent di atas ada deskripsinya, pastikan talent yang muncul di tiap scene KONSISTEN mengikuti deskripsi tersebut (jangan ganti-ganti orang antar scene). Kalau tidak ada talent spesifik, boleh full product shot tanpa orang, atau tangan model generik seperlunya.
 
 ATURAN HOOK: jangan pakai hook lemah. Hook harus memicu salah satu dari: curiosity, fear, desire, identity, shock, contrarian, status, loss aversion, atau pattern interrupt. Tulis dalam Bahasa Indonesia natural, gaya kayak "Orang pintar justru melakukan ini...", "Kalau masih begini, siap-siap...", "99% orang salah...", dsb — tapi buat versi ORIGINAL sesuai produk ini, jangan pakai contoh generik ini mentah-mentah.
 
@@ -1623,6 +1718,48 @@ ${sceneSchema}
 PRIORITASKAN scroll-stopping creative dibanding visual yang cuma estetik. Optimalkan untuk CTR, Hook Rate, Hold Rate, dan Conversion Rate.`;
 }
 
+function escapeHtml(str){
+  return str.replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+}
+
+function buildVideoBlockCard(title, obj){
+  const json = JSON.stringify(obj, null, 2);
+  const card = document.createElement('div');
+  card.className = 'section-card';
+  card.innerHTML = `
+    <div class="sc-head">
+      <h3>${escapeHtml(title)}</h3>
+      <button class="secondary small btn-copy-block">Copy</button>
+    </div>
+    <div class="sc-body">
+      <pre class="output show">${escapeHtml(json)}</pre>
+    </div>
+  `;
+  card.querySelector('.btn-copy-block').addEventListener('click', () => copyText(json));
+  return card;
+}
+
+function renderVideoOutputBlocks(parsed){
+  const container = $('videoOutputBlocks');
+  container.innerHTML = '';
+
+  container.appendChild(buildVideoBlockCard('Strategy & Video Meta', {
+    creative_strategy: parsed.creative_strategy,
+    video: parsed.video
+  }));
+
+  const sceneKeys = Object.keys(parsed)
+    .filter(k => /^scene_\d+$/.test(k))
+    .sort((a, b) => parseInt(a.split('_')[1], 10) - parseInt(b.split('_')[1], 10));
+
+  sceneKeys.forEach(key => {
+    const num = key.split('_')[1];
+    const purpose = parsed[key] && parsed[key].purpose ? parsed[key].purpose : '';
+    const title = `Scene ${num}${purpose ? ' — ' + purpose : ''}`;
+    container.appendChild(buildVideoBlockCard(title, { [key]: parsed[key] }));
+  });
+}
+
 async function generateVideoCreative(){
   const statusEl = $('statusVideo');
   if(!videoState.selectedMotive || !videoState.selectedFormat){
@@ -1630,8 +1767,11 @@ async function generateVideoCreative(){
     return;
   }
   setStatus(statusEl, 'pending', 'Generating creative JSON...');
-  const outputEl = $('videoOutput');
-  outputEl.classList.remove('show');
+  const rawEl = $('videoOutputRaw');
+  const blocksEl = $('videoOutputBlocks');
+  rawEl.classList.remove('show');
+  rawEl.textContent = '';
+  blocksEl.innerHTML = '';
 
   try{
     const prompt = buildVideoCreativePrompt();
@@ -1645,9 +1785,14 @@ async function generateVideoCreative(){
       pretty = cleaned;
       parsed = null;
     }
-    outputEl.textContent = pretty;
-    outputEl.classList.add('show');
-    outputEl.dataset.raw = pretty;
+
+    rawEl.dataset.raw = pretty;
+    if(parsed){
+      renderVideoOutputBlocks(parsed);
+    }else{
+      rawEl.textContent = pretty;
+      rawEl.classList.add('show');
+    }
 
     if(parsed){
       const totalScene = (parsed.video && parsed.video.total_scene) || getSceneStructure().length;
@@ -1660,7 +1805,7 @@ async function generateVideoCreative(){
 
     $('btnRegenerateVideo').style.display = 'inline-block';
     $('btnCopyVideo').style.display = 'inline-block';
-    setStatus(statusEl, 'ok', 'Selesai. Mau variasi lain? Klik "Generate Variasi Baru".');
+    setStatus(statusEl, 'ok', 'Selesai. Tiap scene bisa di-copy sendiri-sendiri di bawah. Mau variasi lain? Klik "Generate Variasi Baru".');
   }catch(e){
     setStatus(statusEl, 'err', 'Gagal: ' + e.message);
   }
@@ -1677,8 +1822,9 @@ function resetVideoWizard(){
   $('formatSelectedPill').style.display = 'none';
   $('formatSection').classList.remove('active');
   $('generateVideoSection').classList.remove('active');
-  $('videoOutput').classList.remove('show');
-  $('videoOutput').textContent = '';
+  $('videoOutputRaw').classList.remove('show');
+  $('videoOutputRaw').textContent = '';
+  $('videoOutputBlocks').innerHTML = '';
   $('btnRegenerateVideo').style.display = 'none';
   $('btnCopyVideo').style.display = 'none';
   clearStatus($('statusMotives'));
@@ -1810,15 +1956,19 @@ function initTool(){
 
   $('tabLP').addEventListener('click', () => switchMode('lp'));
   $('tabVideo').addEventListener('click', () => switchMode('video'));
+  $('vProductImage').addEventListener('change', handleVideoProductImageUpload);
   $('btnAutoDeskripsiVideo').addEventListener('click', autoGenerateVideoDescription);
-  $('vJumlahScene').addEventListener('change', updateSceneStructureHint);
+  $('vTalentImage').addEventListener('change', handleTalentImageUpload);
+  $('btnAnalyzeTalent').addEventListener('click', analyzeTalentImage);
+  $('vDurasiTotal').addEventListener('input', updateSceneStructureHint);
+  $('vDurasiScene').addEventListener('input', updateSceneStructureHint);
   $('btnAnalyzeMotives').addEventListener('click', analyzeMotives);
   $('btnAnalyzeFormats').addEventListener('click', analyzeFormats);
   $('btnGenerateVideo').addEventListener('click', generateVideoCreative);
   $('btnRegenerateVideo').addEventListener('click', generateVideoCreative);
   $('btnResetWizard').addEventListener('click', resetVideoWizard);
   $('btnCopyVideo').addEventListener('click', () => {
-    const text = $('videoOutput').dataset.raw;
+    const text = $('videoOutputRaw').dataset.raw;
     if(!text){ toast('Belum ada hasil untuk di-copy'); return; }
     copyText(text);
   });
