@@ -669,6 +669,11 @@
           <div class="status" id="statusAutoDeskripsiVideo"></div>
         </div>
         <div class="field">
+          <label for="vProductVisualAnchor">Detail Visual Produk (Anchor Konsistensi Antar Scene)</label>
+          <textarea id="vProductVisualAnchor" rows="2" placeholder="mis. botol amber 350ml, tutup putih, label hijau-kuning bertuliskan nama produk, bentuk silinder ramping"></textarea>
+          <div class="hint">Terisi otomatis bareng "Generate Deskripsi dari Foto" di atas. Teks ini akan ditempel PERSIS SAMA di setiap scene yang menampilkan produk, biar warna/bentuk/kemasan nggak berubah-ubah antar scene. Boleh diedit manual biar lebih presisi.</div>
+        </div>
+        <div class="field">
           <label for="vTalentImage">Foto Model/Talent (opsional)</label>
           <input type="file" id="vTalentImage" accept="image/*">
           <img id="vTalentPreview" class="preview-img">
@@ -1410,6 +1415,40 @@ const SCENE_STRUCTURES = {
   8: ['Hook', 'Problem', 'Agitate', 'Solution', 'Benefit/Proof', 'Social Proof/Testimonial', 'Urgency/Offer', 'CTA']
 };
 
+/* Hitung rentang durasi tiap scene secara deterministik dari Durasi per Scene,
+   biar pacing-nya presisi dan konsisten, bukan tebakan AI. */
+function computeDurationRange(sceneIndex, durasiScene){
+  const match = durasiScene.match(/([\d.]+)\s*([a-zA-Z]*)/);
+  const perScene = match ? parseFloat(match[1]) : 8;
+  const unit = (match && match[2]) || 's';
+  const start = Math.round((sceneIndex - 1) * perScene);
+  const end = Math.round(sceneIndex * perScene);
+  return `${start}-${end}${unit}`;
+}
+
+/* Negative prompt dibangun deterministik (bukan AI-generated) supaya SELALU
+   konsisten di tiap scene — termasuk guard konsistensi produk/talent & klaim medis. */
+function buildNegativePrompt(data){
+  const productName = data.nama || 'produk ini';
+  const parts = [
+    'talking head statis ke kamera',
+    'static shot tanpa pergerakan kamera',
+    'lens flare berlebihan',
+    'overexposed / dark footage',
+    'blurry motion',
+    'unnatural stiff movement, robotic motion',
+    'jarring cuts, jump cut tanpa transisi',
+    'overcrowded text overlay, teks tidak terbaca',
+    'color grading artifacts',
+    'fake CGI look, stock footage look, terasa seperti iklan generik',
+    `different product than reference, mismatched packaging/warna untuk ${productName}, altered label design, wrong bottle/container shape, generic product substitute`,
+    'inconsistent product appearance between scenes',
+    'inconsistent talent appearance/wardrobe between scenes',
+    'klaim berlebihan/menyesatkan: menyembuhkan, mengobati, obat, 100% aman, tanpa efek samping, terbukti secara klinis'
+  ];
+  return parts.join(', ');
+}
+
 function computeSceneCount(){
   const totalMatch = ($('vDurasiTotal').value.match(/[\d.]+/) || [])[0];
   const perSceneMatch = ($('vDurasiScene').value.match(/[\d.]+/) || [])[0];
@@ -1444,6 +1483,7 @@ function collectVideoProduct(){
     nama: $('vNama').value.trim(),
     kategori: $('vKategori').value,
     deskripsi: $('vDeskripsi').value.trim(),
+    productVisualAnchor: $('vProductVisualAnchor').value.trim(),
     talentDeskripsi: $('vTalentDeskripsi').value.trim(),
     ratio: $('vRatio').value,
     durasiTotal: $('vDurasiTotal').value.trim() || '24s',
@@ -1466,22 +1506,27 @@ async function autoGenerateVideoDescription(){
 
   const prompt = `Kamu adalah Meta Ads Creative Strategist untuk kategori produk: ${kategori}.
 
-Lihat foto produk ini dengan detail: bentuk fisik, kemasan, warna, tekstur, ukuran kira-kira, dan elemen visual lain yang terlihat.
+Lihat foto produk ini dengan sangat detail: bentuk fisik, kemasan, warna persis, tekstur, ukuran kira-kira, tulisan/label yang terlihat, dan elemen visual lain.
 
 ${nama ? `Nama Produk: ${nama}` : '(nama produk belum diisi, boleh diabaikan)'}
 Kategori: ${kategori}
 
-TUGAS: Tulis deskripsi singkat produk ini dalam 1 paragraf (3-4 kalimat) Bahasa Indonesia, gabungkan apa yang BENAR-BENAR terlihat di foto dengan konteks nama/kategori di atas: bentuk fisik produk, kesan kualitas/material dari visualnya, kira-kira siapa target pembelinya, dan masalah/kebutuhan apa yang kemungkinan diselesaikan. Jangan mengarang klaim medis/khasiat berlebihan atau klaim yang tidak bisa disimpulkan dari foto.
-
-Balas HANYA dengan teks paragraf deskripsinya saja, tanpa markdown, tanpa judul, tanpa tanda kutip, tanpa penjelasan tambahan.`;
+TUGAS: Balas HANYA dengan satu JSON PERSIS seperti ini, tanpa markdown/backtick/penjelasan tambahan:
+{
+  "deskripsi": "1 paragraf singkat (3-4 kalimat) Bahasa Indonesia: apa produknya, siapa target pembelinya, masalah/kebutuhan apa yang diselesaikan. Gabungkan apa yang terlihat di foto dengan konteks nama/kategori. Jangan mengarang klaim medis/khasiat berlebihan.",
+  "visual_anchor": "1 kalimat padat & sangat spesifik mendeskripsikan tampilan fisik PERSIS produk ini (bentuk kemasan, warna dominan & aksen, material/tekstur, ukuran kira-kira, detail label/tulisan yang terlihat) — kalimat ini akan dipakai berulang kali sebagai acuan visual supaya produk terlihat identik di setiap scene video, jadi harus detail dan konkret, bukan generik."
+}`;
 
   try{
-    const out = await callGemini([
+    const raw = await callGemini([
       { text: prompt },
       { inline_data: { mime_type: vProductImageMime, data: vProductImageBase64 } }
     ]);
-    $('vDeskripsi').value = out.trim().replace(/^"+|"+$/g, '');
-    setStatus(statusEl, 'ok', 'Deskripsi terisi otomatis dari analisa foto — cek & edit sesuai kebutuhan.');
+    const cleaned = stripJsonFence(raw);
+    const parsed = JSON.parse(cleaned);
+    if(typeof parsed.deskripsi === 'string') $('vDeskripsi').value = parsed.deskripsi.trim();
+    if(typeof parsed.visual_anchor === 'string') $('vProductVisualAnchor').value = parsed.visual_anchor.trim();
+    setStatus(statusEl, 'ok', 'Deskripsi & detail visual produk terisi otomatis — cek & edit sesuai kebutuhan.');
   }catch(e){
     setStatus(statusEl, 'err', 'Gagal: ' + e.message);
   }
@@ -1648,56 +1693,92 @@ function buildVideoCreativePrompt(){
   const data = collectVideoProduct();
   const structure = getSceneStructure();
   const avoidHooks = videoState.usedHooks.length
-    ? `HOOK YANG SUDAH PERNAH DIPAKAI DI GENERATE SEBELUMNYA (JANGAN DIULANG, buat yang beda): ${JSON.stringify(videoState.usedHooks)}`
+    ? `HEADLINE/HOOK YANG SUDAH PERNAH DIPAKAI DI GENERATE SEBELUMNYA (JANGAN DIULANG, buat yang beda): ${JSON.stringify(videoState.usedHooks)}`
     : '';
   const avoidCtas = videoState.usedCtas.length
-    ? `CTA YANG SUDAH PERNAH DIPAKAI (JANGAN DIULANG): ${JSON.stringify(videoState.usedCtas)}`
+    ? `CAPTION/CTA YANG SUDAH PERNAH DIPAKAI (JANGAN DIULANG): ${JSON.stringify(videoState.usedCtas)}`
     : '';
 
   const structureLines = structure
-    .map((purpose, i) => `Scene ${i + 1} — ${purpose.toUpperCase()}: ${SCENE_PURPOSE_GUIDE[purpose] || ''}`)
+    .map((purpose, i) => `Scene ${i + 1} (${computeDurationRange(i + 1, data.durasiScene)}) — ${purpose.toUpperCase()}: ${SCENE_PURPOSE_GUIDE[purpose] || ''}`)
     .join('\n');
+
+  const productAnchor = data.productVisualAnchor || data.deskripsi || data.nama || '-';
+  const talentAnchor = data.talentDeskripsi || '';
 
   const sceneSchema = structure
     .map((purpose, i) => `  "scene_${i + 1}": {
+    "scene": ${i + 1},
+    "duration_range": "${computeDurationRange(i + 1, data.durasiScene)}",
     "purpose": "${purpose}",
-    "visual": "", "camera": "", "lighting": "", "environment": "", "motion": "",
-    "text_overlay": "", "voice_over": "", "sound_effect": "", "background_music": "", "transition": ""
+    "voice_over_script": "",
+    "camera": { "movement": "", "lens": "", "speed": "" },
+    "visual_prompt": {
+      "environment": "",
+      "subject": "",
+      "composition": "",
+      "lighting": "",
+      "camera_motion": "",
+      "depth_of_field": "",
+      "quality": "Ultra realistic 8K",
+      "aspect_ratio": "${data.ratio}"
+    },
+    "motion_prompt": { "camera": "", "subject_motion": "", "background_motion": "", "transition": "" },
+    "overlay_design": {
+      "badge": { "text": "", "background": "Auto", "text_color": "Auto" },
+      "headline": { "text": "", "font": "Bold Sans", "weight": "900" },
+      "keyword": { "text": "", "color": "Auto", "gradient": true, "glow": true },
+      "background_panel": { "type": "premium_glow", "opacity": 65 },
+      "stroke": true,
+      "shadow": true,
+      "accent": { "type": "underline_glow", "color": "Auto" },
+      "animation": { "intro": "Kinetic Pop", "loop": "Pulse", "exit": "Slide Up" },
+      "position": "Center"
+    },
+    "caption": "",
+    "negative_prompt": ""
   }`)
     .join(',\n');
 
   return `SYSTEM ROLE
-Kamu adalah META ADS CREATIVE MOTIVE ENGINE v1.0. Peranmu adalah Meta Ads Creative Strategist, bukan copywriter biasa. Creative harus dibangun dari buying motive, bukan asal script.
+Kamu adalah META ADS CREATIVE MOTIVE ENGINE v1.0. Peranmu adalah Meta Ads Creative Strategist + AI video prompt engineer, bukan copywriter biasa. Creative harus dibangun dari buying motive, bukan asal script, dan visual_prompt/motion_prompt kamu akan dipakai LANGSUNG sebagai prompt ke AI video generator — jadi harus sinematik, spesifik, dan detail, BUKAN generik.
 
 KONTEKS YANG SUDAH DITENTUKAN (jangan diubah, jangan tanya ulang):
 Produk: ${data.nama}
 Kategori: ${data.kategori}
 Deskripsi: ${data.deskripsi || '-'}
-Model/Talent: ${data.talentDeskripsi || 'Tidak ada talent spesifik ditentukan — boleh pakai product shot / tangan model generik / tanpa talent, sesuaikan dengan format creative yang dipilih'}
 Buying Motive Terpilih: ${videoState.selectedMotive}
 Creative Format Terpilih: ${videoState.selectedFormat}
 
-TUGAS: Buat SATU creative concept kuat, mengeksekusi motif & format di atas, dengan struktur ${structure.length} scene berikut (jangan tambah/kurangi jumlah scene, ikuti persis urutan ini):
+VISUAL ANCHOR PRODUK (WAJIB, PALING PENTING UNTUK KONSISTENSI):
+"${productAnchor}"
+Kalimat ini adalah tampilan FISIK PERSIS produk (kemasan, warna, bentuk, label). Di SETIAP scene yang menampilkan produk, field "visual_prompt.subject" WAJIB memuat deskripsi produk yang IDENTIK dengan anchor ini (boleh disusun ulang jadi kalimat natural, tapi detail warna/kemasan/bentuk/label TIDAK BOLEH berubah atau berbeda sama sekali antar scene). Ini paling sering jadi penyebab hasil generate video kelihatan aneh — produk atau baju talent ganti-ganti warna/model padahal harusnya video yang sama.
+
+VISUAL ANCHOR TALENT (kalau ada):
+${talentAnchor ? `"${talentAnchor}"
+Deskripsi fisik & wardrobe talent ini WAJIB identik di SETIAP scene yang menampilkan talent tersebut (rambut, warna & model baju, aksesoris) — JANGAN variasikan/ganti kostum antar scene kecuali memang direncanakan sebagai bagian cerita.` : 'Tidak ada talent spesifik ditentukan — boleh pakai product shot murni / tangan model generik / tanpa talent, sesuaikan dengan format creative yang dipilih. Kalau kamu memutuskan pakai talent generik, JAGA konsistensi tampilan talent itu di semua scene yang menampilkannya.'}
+
+TUGAS: Buat SATU creative concept kuat, mengeksekusi motif & format di atas, dengan struktur ${structure.length} scene berikut (jangan tambah/kurangi jumlah scene, ikuti persis urutan & rentang durasi ini):
 ${structureLines}
 
 Catatan pacing: makin banyak jumlah scene, makin banyak "amunisi psikologis" yang perlu digali sebelum CTA (bukan cuma beat yang sama diperpanjang durasinya) — tiap scene harus punya kontribusi psikologis yang jelas dan berbeda dari scene lain.
 
-ATURAN VISUAL — tiap scene WAJIB berisi: visual description, camera movement, facial expression (kalau relevan), lighting, environment, composition/motion, text overlay, voice over, sound effect, background music, transition. Field yang tidak relevan boleh dikosongkan string kosong, tapi field-nya tetap harus ada.
+ATURAN CAMERA & VISUAL (WAJIB SPESIFIK, JANGAN GENERIK): Jangan tulis camera movement generik seperti "zoom in biasa" atau "kamera diam". Gunakan istilah sinematik profesional dan bervariasi antar scene sesuai mood-nya, misalnya: extreme macro push-in, whip pan reveal, dolly-in cepat, tracking shot, speed ramp dari cepat ke slow-motion, handheld dinamis, hero slow creep, dsb. Tentukan juga lens (mis. 35mm anamorphic, 50mm prime, macro lens) dan speed (mis. "speed ramp fast to smooth slow-motion"). visual_prompt.composition dan depth_of_field juga harus konkret (mis. "commercial composition, produk 40% foreground", "shallow depth of field, creamy bokeh background").
 
-ATURAN TALENT: kalau Model/Talent di atas ada deskripsinya, pastikan talent yang muncul di tiap scene KONSISTEN mengikuti deskripsi tersebut (jangan ganti-ganti orang antar scene). Kalau tidak ada talent spesifik, boleh full product shot tanpa orang, atau tangan model generik seperlunya.
+ATURAN OVERLAY_DESIGN: badge.text singkat (2-4 kata, mis. "TEMUAN BARU", "PROMO HARI INI"), headline.text adalah hook/pesan utama scene (maks 6 kata, kuat & scroll-stopping untuk Hook, atau closing kuat untuk scene terakhir), keyword.text adalah 1-2 kata penekanan dari headline yang mau di-highlight (gradient+glow). caption adalah CTA singkat di scene terakhir gaya "KLIK KERANJANG KUNING" / "SWIPE UP SEKARANG" (boleh kosong string di scene yang bukan closing).
 
-ATURAN HOOK: jangan pakai hook lemah. Hook harus memicu salah satu dari: curiosity, fear, desire, identity, shock, contrarian, status, loss aversion, atau pattern interrupt. Tulis dalam Bahasa Indonesia natural, gaya kayak "Orang pintar justru melakukan ini...", "Kalau masih begini, siap-siap...", "99% orang salah...", dsb — tapi buat versi ORIGINAL sesuai produk ini, jangan pakai contoh generik ini mentah-mentah.
+ATURAN VOICE OVER SCRIPT: Bahasa Indonesia natural, conversational, tidak kaku/robotic, tidak ada klaim berlebihan, tidak ada fake urgency, panjang wajar sesuai duration_range scene tersebut.
 
-ATURAN VOICE OVER: Bahasa Indonesia natural, conversational, tidak kaku/robotic, tidak ada klaim berlebihan, tidak ada fake urgency.
+ATURAN HOOK (scene pertama): jangan pakai hook lemah. Hook harus memicu salah satu dari: curiosity, fear, desire, identity, shock, contrarian, status, loss aversion, atau pattern interrupt. Buat versi ORIGINAL sesuai produk ini, jangan pakai contoh generik mentah-mentah.
 
-ATURAN TEXT OVERLAY: maksimal 8 kata per overlay, gampang dibaca.
+ATURAN CTA (scene terakhir): soft CTA, gaya "Pelajari selengkapnya", "Klik keranjang kuning", "Coba sekarang" — atau variasi natural lain sesuai format creative, jangan hard-selling maksa.
 
-ATURAN CTA: soft CTA, gaya "Pelajari selengkapnya", "Lihat caranya", "Klik untuk tahu lebih banyak", "Coba sekarang" — atau variasi natural lain, jangan hard-selling maksa.
+Field "negative_prompt" boleh dikosongkan string kosong saja (akan diisi otomatis oleh sistem, bukan tugasmu).
 
 ${avoidHooks}
 ${avoidCtas}
 
-OUTPUT FORMAT: Balas HANYA dengan SATU JSON, tanpa markdown, tanpa backtick, tanpa penjelasan/catatan tambahan. Ikuti struktur PERSIS ini, isi semua field (jangan ada yang kosong kecuali memang tidak relevan):
+OUTPUT FORMAT: Balas HANYA dengan SATU JSON, tanpa markdown, tanpa backtick, tanpa penjelasan/catatan tambahan. Ikuti struktur PERSIS ini, isi semua field (jangan ada yang kosong kecuali disebutkan boleh kosong di atas):
 {
   "creative_strategy": {
     "product": "${data.nama}",
@@ -1748,6 +1829,20 @@ function renderVideoOutputBlocks(parsed){
     video: parsed.video
   }));
 
+  if(parsed.visual_anchor){
+    container.appendChild(buildVideoBlockCard('Visual Anchor (Konsistensi Produk & Talent)', {
+      visual_anchor: parsed.visual_anchor
+    }));
+  }
+
+  const contextFields = {
+    product: parsed.creative_strategy && parsed.creative_strategy.product,
+    ratio: parsed.video && parsed.video.ratio,
+    scene_duration: parsed.video && parsed.video.scene_duration,
+    total_scene: parsed.video && parsed.video.total_scene,
+    visual_anchor: parsed.visual_anchor
+  };
+
   const sceneKeys = Object.keys(parsed)
     .filter(k => /^scene_\d+$/.test(k))
     .sort((a, b) => parseInt(a.split('_')[1], 10) - parseInt(b.split('_')[1], 10));
@@ -1756,8 +1851,49 @@ function renderVideoOutputBlocks(parsed){
     const num = key.split('_')[1];
     const purpose = parsed[key] && parsed[key].purpose ? parsed[key].purpose : '';
     const title = `Scene ${num}${purpose ? ' — ' + purpose : ''}`;
-    container.appendChild(buildVideoBlockCard(title, { [key]: parsed[key] }));
+    const sceneObj = Object.assign({ scene_number: parseInt(num, 10) }, contextFields, { [key]: parsed[key] });
+    container.appendChild(buildVideoBlockCard(title, sceneObj));
   });
+}
+
+/* Setelah AI balas JSON, kita PAKSA field-field kritikal ini secara deterministik
+   dari sistem (bukan percaya begitu saja ke AI) supaya konsisten 100%:
+   - scene index & purpose & duration_range (biar pacing presisi)
+   - visual_prompt.subject ditempeli anchor produk/talent PERSIS SAMA di tiap scene
+   - negative_prompt dibangun dari template tetap, bukan ditebak AI */
+function enforceVideoConsistency(parsed, data, structure){
+  const productAnchor = data.productVisualAnchor || data.deskripsi || data.nama || '';
+  const talentAnchor = data.talentDeskripsi || '';
+  const anchorPrefix = [productAnchor, talentAnchor].filter(Boolean).join('. ');
+
+  structure.forEach((purpose, i) => {
+    const key = `scene_${i + 1}`;
+    const scene = parsed[key];
+    if(!scene) return;
+
+    scene.scene = i + 1;
+    scene.purpose = purpose;
+    scene.duration_range = computeDurationRange(i + 1, data.durasiScene);
+    scene.negative_prompt = buildNegativePrompt(data);
+
+    if(scene.visual_prompt){
+      scene.visual_prompt.aspect_ratio = data.ratio;
+      if(!scene.visual_prompt.quality) scene.visual_prompt.quality = 'Ultra realistic 8K';
+      const existingSubject = (scene.visual_prompt.subject || '').trim();
+      if(anchorPrefix){
+        scene.visual_prompt.subject = existingSubject
+          ? `${anchorPrefix}. ${existingSubject}`
+          : anchorPrefix;
+      }
+    }
+  });
+
+  parsed.visual_anchor = {
+    product_appearance: productAnchor || '-',
+    talent_appearance: talentAnchor || '-'
+  };
+
+  return parsed;
 }
 
 async function generateVideoCreative(){
@@ -1774,12 +1910,15 @@ async function generateVideoCreative(){
   blocksEl.innerHTML = '';
 
   try{
+    const data = collectVideoProduct();
+    const structure = getSceneStructure();
     const prompt = buildVideoCreativePrompt();
     const raw = await callGemini([{ text: prompt }]);
     const cleaned = stripJsonFence(raw);
     let parsed, pretty;
     try{
       parsed = JSON.parse(cleaned);
+      parsed = enforceVideoConsistency(parsed, data, structure);
       pretty = JSON.stringify(parsed, null, 2);
     }catch(_){
       pretty = cleaned;
@@ -1795,10 +1934,11 @@ async function generateVideoCreative(){
     }
 
     if(parsed){
-      const totalScene = (parsed.video && parsed.video.total_scene) || getSceneStructure().length;
+      const totalScene = structure.length;
+      const firstScene = parsed.scene_1;
       const lastScene = parsed[`scene_${totalScene}`];
-      const hook = parsed.scene_1 && parsed.scene_1.text_overlay;
-      const cta = lastScene && lastScene.text_overlay;
+      const hook = firstScene && firstScene.overlay_design && firstScene.overlay_design.headline && firstScene.overlay_design.headline.text;
+      const cta = lastScene && lastScene.caption;
       if(hook) videoState.usedHooks.push(hook);
       if(cta) videoState.usedCtas.push(cta);
     }
