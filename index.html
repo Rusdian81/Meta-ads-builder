@@ -298,6 +298,22 @@
   }
   #logoutBtn:hover{border-color:var(--ember-dim);color:var(--ink);}
   .who-badge{font-size:12px;color:var(--ink-dim);margin-right:10px;}
+
+  .user-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    padding:10px 12px;
+    border:1px solid var(--line);
+    border-radius:4px;
+    background:var(--bg-inset);
+    margin-bottom:8px;
+    flex-wrap:wrap;
+  }
+  .user-row .u-info{font-size:13.5px;color:var(--ink);}
+  .user-row .u-info .role-tag{font-size:10.5px;color:var(--ink-dim);margin-left:8px;text-transform:uppercase;}
+  .user-row .u-actions{display:flex;gap:8px;}
 </style>
 </head>
 <body>
@@ -344,6 +360,35 @@
       v1 · client-side only<br>API key tidak pernah disimpan/di-upload
     </div>
   </header>
+
+  <!-- ADMIN PANEL — hanya tampil kalau role = admin -->
+  <section class="block" id="adminPanel" style="display:none;">
+    <div class="block-head"><span class="num">★</span><div><h2>Panel Admin — Kelola User</h2><div class="sub">Tambah, reset password, atau hapus user yang boleh pakai tool ini. Perubahan langsung berlaku, tanpa perlu buka Vercel.</div></div></div>
+    <div class="block-body">
+      <div id="userList" style="margin-bottom:18px;"></div>
+      <div class="grid3">
+        <div class="field">
+          <label for="newUserName">Username Baru</label>
+          <input type="text" id="newUserName" placeholder="mis. sinta">
+        </div>
+        <div class="field">
+          <label for="newUserPass">Password</label>
+          <input type="text" id="newUserPass" placeholder="password">
+        </div>
+        <div class="field">
+          <label for="newUserRole">Role</label>
+          <select id="newUserRole">
+            <option value="member">Member (pakai tool saja)</option>
+            <option value="admin">Admin (bisa kelola user)</option>
+          </select>
+        </div>
+      </div>
+      <div class="row-actions">
+        <button id="btnAddUser">Tambah User</button>
+      </div>
+      <div class="status" id="statusUsers"></div>
+    </div>
+  </section>
 
   <!-- STEP 0: CONFIG -->
   <section class="block">
@@ -1015,10 +1060,14 @@ function showLogin(){
   $('loginScreen').style.display = 'flex';
   $('appRoot').style.display = 'none';
 }
-function showApp(username){
+function showApp(username, role){
   $('loginScreen').style.display = 'none';
   $('appRoot').style.display = 'block';
-  $('whoBadge').textContent = username ? `Login sebagai ${username}` : '';
+  $('whoBadge').textContent = username ? `Login sebagai ${username}${role === 'admin' ? ' (admin)' : ''}` : '';
+  if(role === 'admin'){
+    $('adminPanel').style.display = 'block';
+    loadUsers();
+  }
   initTool();
 }
 
@@ -1042,9 +1091,9 @@ async function doLogin(){
       setStatus(statusEl, 'err', data.error || 'Username atau password salah.');
       return;
     }
-    setSession({ token: data.token, username: data.username });
+    setSession({ token: data.token, username: data.username, role: data.role });
     clearStatus(statusEl);
-    showApp(data.username);
+    showApp(data.username, data.role);
   }catch(e){
     setStatus(statusEl, 'err', 'Gagal menghubungi server login: ' + e.message);
   }
@@ -1061,13 +1110,13 @@ async function verifySession(){
     });
     const data = await res.json();
     if(data && data.valid){
-      showApp(data.username || session.username);
+      setSession({ token: session.token, username: data.username, role: data.role });
+      showApp(data.username || session.username, data.role);
     }else{
       clearSession();
       showLogin();
     }
   }catch(e){
-    // Kalau server verify tidak bisa dihubungi, jangan loloskan begitu saja — minta login ulang.
     clearSession();
     showLogin();
   }
@@ -1076,6 +1125,110 @@ async function verifySession(){
 function doLogout(){
   clearSession();
   location.reload();
+}
+
+/* ---------------------------------------------------------
+   ADMIN PANEL — kelola user lewat /api/users
+--------------------------------------------------------- */
+function authHeader(){
+  const session = getSession();
+  return session && session.token ? { Authorization: `Bearer ${session.token}` } : {};
+}
+
+async function loadUsers(){
+  const container = $('userList');
+  container.innerHTML = '<div class="hint">Memuat daftar user...</div>';
+  try{
+    const res = await fetch('/api/users', { headers: authHeader() });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Gagal memuat user.');
+    if(!data.users.length){
+      container.innerHTML = '<div class="hint">Belum ada user lain selain kamu.</div>';
+      return;
+    }
+    container.innerHTML = '';
+    data.users.forEach(u => {
+      const row = document.createElement('div');
+      row.className = 'user-row';
+      row.innerHTML = `
+        <div class="u-info">${u.username}<span class="role-tag">${u.role}</span></div>
+        <div class="u-actions">
+          <button class="secondary small btn-reset">Reset Password</button>
+          <button class="secondary small btn-delete">Hapus</button>
+        </div>
+      `;
+      row.querySelector('.btn-reset').addEventListener('click', () => resetUserPassword(u.username));
+      row.querySelector('.btn-delete').addEventListener('click', () => deleteUser(u.username));
+      container.appendChild(row);
+    });
+  }catch(e){
+    container.innerHTML = `<div class="hint" style="color:var(--err);">Gagal memuat: ${e.message}</div>`;
+  }
+}
+
+async function addUser(){
+  const statusEl = $('statusUsers');
+  const username = $('newUserName').value.trim();
+  const password = $('newUserPass').value;
+  const role = $('newUserRole').value;
+  if(!username || !password){
+    setStatus(statusEl, 'err', 'Isi username dan password dulu.');
+    return;
+  }
+  setStatus(statusEl, 'pending', 'Menambah user...');
+  try{
+    const res = await fetch('/api/users', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', ...authHeader() },
+      body: JSON.stringify({ username, password, role })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Gagal menambah user.');
+    setStatus(statusEl, 'ok', `User "${username}" berhasil ditambahkan.`);
+    $('newUserName').value = '';
+    $('newUserPass').value = '';
+    loadUsers();
+  }catch(e){
+    setStatus(statusEl, 'err', e.message);
+  }
+}
+
+async function resetUserPassword(username){
+  const newPassword = prompt(`Password baru untuk "${username}":`);
+  if(!newPassword) return;
+  const statusEl = $('statusUsers');
+  setStatus(statusEl, 'pending', 'Mereset password...');
+  try{
+    const res = await fetch('/api/users', {
+      method:'PATCH',
+      headers:{ 'Content-Type':'application/json', ...authHeader() },
+      body: JSON.stringify({ username, newPassword })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Gagal reset password.');
+    setStatus(statusEl, 'ok', `Password "${username}" berhasil direset.`);
+  }catch(e){
+    setStatus(statusEl, 'err', e.message);
+  }
+}
+
+async function deleteUser(username){
+  if(!confirm(`Yakin hapus user "${username}"? Sesi login dia langsung mati.`)) return;
+  const statusEl = $('statusUsers');
+  setStatus(statusEl, 'pending', 'Menghapus user...');
+  try{
+    const res = await fetch('/api/users', {
+      method:'DELETE',
+      headers:{ 'Content-Type':'application/json', ...authHeader() },
+      body: JSON.stringify({ username })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Gagal menghapus user.');
+    setStatus(statusEl, 'ok', `User "${username}" dihapus.`);
+    loadUsers();
+  }catch(e){
+    setStatus(statusEl, 'err', e.message);
+  }
 }
 
 /* ---------------------------------------------------------
@@ -1093,6 +1246,7 @@ function initTool(){
   $('refImage').addEventListener('change', handleImageUpload);
   $('btnGenAll').addEventListener('click', generateAll);
   $('btnDownloadAll').addEventListener('click', downloadAll);
+  $('btnAddUser').addEventListener('click', addUser);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
