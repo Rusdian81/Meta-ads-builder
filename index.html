@@ -314,6 +314,73 @@
   .user-row .u-info{font-size:13.5px;color:var(--ink);}
   .user-row .u-info .role-tag{font-size:10.5px;color:var(--ink-dim);margin-left:8px;text-transform:uppercase;}
   .user-row .u-actions{display:flex;gap:8px;}
+
+  /* ---- MODE TABS ---- */
+  .mode-tabs{
+    display:flex;
+    gap:8px;
+    margin-bottom:28px;
+    border-bottom:1px solid var(--line);
+  }
+  .mode-tab{
+    background:transparent;
+    border:none;
+    border-bottom:2px solid transparent;
+    color:var(--ink-dim);
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:700;
+    font-size:17px;
+    padding:10px 4px 12px;
+    cursor:pointer;
+    margin-right:20px;
+  }
+  .mode-tab.active{color:var(--ember);border-bottom-color:var(--ember);}
+  .mode-tab:hover{color:var(--ink);}
+
+  /* ---- CHIPS (motif / format selector) ---- */
+  .chip-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px;}
+  .chip{
+    background:var(--bg-inset);
+    border:1px solid var(--line);
+    color:var(--ink);
+    font-size:13px;
+    padding:9px 14px;
+    border-radius:20px;
+    cursor:pointer;
+    text-align:left;
+    max-width:100%;
+    transition:border-color .12s ease, background .12s ease;
+  }
+  .chip:hover{border-color:var(--ember-dim);}
+  .chip.selected{
+    background:rgba(232,129,58,0.15);
+    border-color:var(--ember);
+    color:var(--ember);
+    font-weight:600;
+  }
+  .wizard-step{
+    opacity:0.4;
+    pointer-events:none;
+    transition:opacity .15s ease;
+  }
+  .wizard-step.active{opacity:1;pointer-events:auto;}
+  .wizard-step-title{
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:700;
+    font-size:16px;
+    color:var(--ink);
+    margin-bottom:8px;
+  }
+  .selected-pill{
+    display:inline-block;
+    font-size:12px;
+    background:rgba(232,129,58,0.15);
+    color:var(--ember);
+    border:1px solid rgba(232,129,58,0.3);
+    padding:4px 10px;
+    border-radius:20px;
+    margin-left:8px;
+  }
 </style>
 </head>
 <body>
@@ -412,6 +479,14 @@
       <div class="status" id="statusTest"></div>
     </div>
   </section>
+
+  <!-- MODE SWITCHER -->
+  <div class="mode-tabs">
+    <button class="mode-tab active" id="tabLP">LP Forge</button>
+    <button class="mode-tab" id="tabVideo">Video Ads (Meta Ads)</button>
+  </div>
+
+  <div id="modeLP">
 
   <!-- STEP 1: REFERENCE IMAGE -->
   <section class="block">
@@ -548,6 +623,104 @@
       </details>
     </div>
   </section>
+
+  </div>
+  <!-- /#modeLP -->
+
+  <div id="modeVideo" style="display:none;">
+
+    <!-- VIDEO STEP 0: DATA PRODUK -->
+    <section class="block">
+      <div class="block-head"><span class="num">01</span><div><h2>Data Produk (Video Ads)</h2><div class="sub">Konteks dasar buat nentuin buying motive & format creative yang cocok.</div></div></div>
+      <div class="block-body">
+        <div class="grid2">
+          <div class="field">
+            <label for="vNama">Nama Produk / Jasa</label>
+            <input type="text" id="vNama" placeholder="mis. Gumora Herbal Oil">
+          </div>
+          <div class="field">
+            <label for="vKategori">Kategori Produk</label>
+            <select id="vKategori">
+              <option value="Herbal/Kesehatan">Herbal / Kesehatan</option>
+              <option value="Kecantikan/Skincare">Kecantikan / Skincare</option>
+              <option value="Fashion/Aksesoris">Fashion / Aksesoris</option>
+              <option value="Gadget/Elektronik">Gadget / Elektronik</option>
+              <option value="Makanan/Minuman">Makanan / Minuman</option>
+              <option value="Ibu & Anak">Ibu & Anak</option>
+              <option value="Rumah Tangga">Rumah Tangga</option>
+              <option value="Digital/Kursus">Digital / Kursus / Jasa</option>
+              <option value="Lainnya">Lainnya (tulis di Deskripsi)</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="vDeskripsi">Deskripsi Singkat Produk</label>
+          <textarea id="vDeskripsi" rows="3" placeholder="Apa produknya, siapa target pembelinya, masalah apa yang diselesaikan"></textarea>
+        </div>
+        <div class="grid3">
+          <div class="field">
+            <label for="vRatio">Rasio Video</label>
+            <select id="vRatio">
+              <option value="9:16">9:16 (Reels/Stories)</option>
+              <option value="1:1">1:1 (Feed)</option>
+              <option value="16:9">16:9 (Landscape)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="vDurasiTotal">Durasi Total</label>
+            <input type="text" id="vDurasiTotal" value="24s">
+          </div>
+          <div class="field">
+            <label for="vDurasiScene">Durasi per Scene</label>
+            <input type="text" id="vDurasiScene" value="8s">
+          </div>
+        </div>
+        <div class="hint">Struktur creative-nya fixed 3 scene: Hook → Problem → Solution+CTA (sesuai master chain kamu). Durasi tinggal disesuaikan.</div>
+      </div>
+    </section>
+
+    <!-- VIDEO STEP 1: MOTIVE -->
+    <section class="block">
+      <div class="block-head"><span class="num">02</span><div><h2>Buying Motive</h2><div class="sub">Kenapa orang bakal beli produk ini — psikologi dulu, baru creative.</div></div></div>
+      <div class="block-body">
+        <div class="row-actions">
+          <button id="btnAnalyzeMotives">Analisa Buying Motive</button>
+          <span class="hint" id="motiveHint">Isi Nama Produk dulu di atas.</span>
+        </div>
+        <div class="status" id="statusMotives"></div>
+        <div class="chip-grid" id="motiveChips"></div>
+      </div>
+    </section>
+
+    <!-- VIDEO STEP 2: FORMAT -->
+    <section class="block wizard-step" id="formatSection">
+      <div class="block-head"><span class="num">03</span><div><h2>Creative Format</h2><div class="sub">Format eksekusi yang paling cocok buat motif yang dipilih.<span class="selected-pill" id="motiveSelectedPill" style="display:none;"></span></div></div></div>
+      <div class="block-body">
+        <div class="row-actions">
+          <button id="btnAnalyzeFormats">Analisa Creative Format</button>
+        </div>
+        <div class="status" id="statusFormats"></div>
+        <div class="chip-grid" id="formatChips"></div>
+      </div>
+    </section>
+
+    <!-- VIDEO STEP 3: GENERATE -->
+    <section class="block wizard-step" id="generateVideoSection">
+      <div class="block-head"><span class="num">04</span><div><h2>Generate Creative JSON</h2><div class="sub">Scene 1 Hook, Scene 2 Problem, Scene 3 Solution+CTA — lengkap visual, camera, VO, text overlay, sound.<span class="selected-pill" id="formatSelectedPill" style="display:none;"></span></div></div></div>
+      <div class="block-body">
+        <div class="row-actions">
+          <button id="btnGenerateVideo">Generate Creative JSON</button>
+          <button class="secondary" id="btnRegenerateVideo" style="display:none;">Generate Variasi Baru</button>
+          <button class="secondary small" id="btnCopyVideo" style="display:none;">Copy</button>
+          <button class="secondary small" id="btnResetWizard">Reset Wizard</button>
+        </div>
+        <div class="status" id="statusVideo"></div>
+        <pre class="output" id="videoOutput"></pre>
+      </div>
+    </section>
+
+  </div>
+  <!-- /#modeVideo -->
 
   <footer class="note">
     <strong>Cara pakai singkat:</strong> isi API key → upload gambar referensi & analisa → isi data produk → generate tiap section → copy JSON ke tool image-generation/overlay-renderer kamu masing-masing (mis. Nano Banana, Imagen, atau engine overlay video kamu yang di-adaptasi untuk gambar statis).<br><br>
@@ -1128,6 +1301,299 @@ function doLogout(){
 }
 
 /* ---------------------------------------------------------
+   MODE SWITCHER — LP Forge <-> Video Ads
+--------------------------------------------------------- */
+function switchMode(mode){
+  const isLP = mode === 'lp';
+  $('modeLP').style.display = isLP ? 'block' : 'none';
+  $('modeVideo').style.display = isLP ? 'none' : 'block';
+  $('tabLP').classList.toggle('active', isLP);
+  $('tabVideo').classList.toggle('active', !isLP);
+}
+
+/* ---------------------------------------------------------
+   VIDEO ADS WIZARD — Meta Ads Creative Motive Engine
+--------------------------------------------------------- */
+const CREATIVE_FORMAT_DB = [
+  'Talking Head', 'Voice Over + B-roll', 'Image Carousel', 'Text Overlay', 'POV',
+  'UGC', 'Mini Drama', 'Storytelling', 'Comparison', 'Before After', 'News Style',
+  'Interview', 'Screen Recording', 'Whiteboard Animation', 'Motion Graphic',
+  'Podcast Clip', 'Lifestyle', 'Tutorial', 'Challenge', 'Case Study',
+  'Fake Documentary', 'Reaction', 'Street Interview', 'AI Cinematic',
+  'Social Proof', 'Customer Journey', 'Problem Solution', 'Day In My Life', 'Listicle'
+];
+
+const videoState = {
+  selectedMotive: null,
+  selectedFormat: null,
+  usedHooks: [],
+  usedCtas: []
+};
+
+function collectVideoProduct(){
+  return {
+    nama: $('vNama').value.trim(),
+    kategori: $('vKategori').value,
+    deskripsi: $('vDeskripsi').value.trim(),
+    ratio: $('vRatio').value,
+    durasiTotal: $('vDurasiTotal').value.trim() || '24s',
+    durasiScene: $('vDurasiScene').value.trim() || '8s'
+  };
+}
+
+async function analyzeMotives(){
+  const statusEl = $('statusMotives');
+  const data = collectVideoProduct();
+  if(!data.nama){
+    setStatus(statusEl, 'err', 'Isi Nama Produk dulu.');
+    return;
+  }
+  setStatus(statusEl, 'pending', 'Menganalisa buying motive...');
+  $('motiveChips').innerHTML = '';
+
+  const prompt = `Kamu adalah META ADS CREATIVE MOTIVE ENGINE v1.0. Peranmu bukan copywriter, tapi Meta Ads Creative Strategist. Setiap creative harus dibangun dari psikologi pembeli (buying motive) dulu, sebelum ke eksekusi.
+
+PRODUK: ${data.nama}
+KATEGORI: ${data.kategori}
+DESKRIPSI: ${data.deskripsi || '-'}
+
+TUGAS: Tentukan buying motive paling relevan untuk produk ini — alasan psikologis KENAPA orang mau beli (bukan fitur produk). Minimal 8, maksimal 15 motif. Boleh terinspirasi kategori seperti Fear, Desire, Convenience, Financial, Status, Family, Career, Lifestyle, Emotion, Security, Health, Confidence, Social Proof, Urgency, Curiosity — tapi tulis SPESIFIK ke produk ini, bukan generic/template.
+
+WAJIB balas HANYA dengan JSON array of string, tanpa markdown/backtick/penjelasan tambahan. Tiap string maksimal 12 kata. Contoh format:
+["Takut ketinggalan solusi yang orang lain sudah pakai duluan", "Ingin diakui lebih rapi/terawat di depan orang lain", "..."]`;
+
+  try{
+    const raw = await callGemini([{ text: prompt }]);
+    const cleaned = stripJsonFence(raw);
+    const motives = JSON.parse(cleaned);
+    renderMotiveChips(motives);
+    setStatus(statusEl, 'ok', `${motives.length} motif ditemukan. Pilih salah satu.`);
+  }catch(e){
+    setStatus(statusEl, 'err', 'Gagal: ' + e.message);
+  }
+}
+
+function renderMotiveChips(motives){
+  const container = $('motiveChips');
+  container.innerHTML = '';
+  motives.forEach(m => {
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.textContent = m;
+    chip.addEventListener('click', () => selectMotive(m, chip));
+    container.appendChild(chip);
+  });
+}
+
+function selectMotive(motive, chipEl){
+  videoState.selectedMotive = motive;
+  videoState.selectedFormat = null;
+  document.querySelectorAll('#motiveChips .chip').forEach(c => c.classList.remove('selected'));
+  chipEl.classList.add('selected');
+
+  $('motiveSelectedPill').style.display = 'inline-block';
+  $('motiveSelectedPill').textContent = motive;
+  $('formatSection').classList.add('active');
+  $('formatChips').innerHTML = '';
+  $('formatSelectedPill').style.display = 'none';
+  $('generateVideoSection').classList.remove('active');
+  $('videoOutput').classList.remove('show');
+  $('btnRegenerateVideo').style.display = 'none';
+  $('btnCopyVideo').style.display = 'none';
+}
+
+async function analyzeFormats(){
+  const statusEl = $('statusFormats');
+  if(!videoState.selectedMotive){
+    setStatus(statusEl, 'err', 'Pilih motif dulu di atas.');
+    return;
+  }
+  const data = collectVideoProduct();
+  setStatus(statusEl, 'pending', 'Menganalisa format creative...');
+  $('formatChips').innerHTML = '';
+
+  const prompt = `Kamu adalah META ADS CREATIVE MOTIVE ENGINE v1.0.
+
+PRODUK: ${data.nama} (${data.kategori})
+MOTIF TERPILIH: ${videoState.selectedMotive}
+
+DATABASE FORMAT CREATIVE (pilih HANYA dari daftar ini, tulis nama persis):
+${CREATIVE_FORMAT_DB.join(', ')}
+
+TUGAS: Pilih 6-12 format dari database di atas yang PALING COCOK untuk mengeksekusi motif tersebut untuk produk ini. Jangan asal pilih semua — hanya yang benar-benar relevan.
+
+WAJIB balas HANYA dengan JSON array of string (nama format persis dari daftar), tanpa markdown/penjelasan tambahan.`;
+
+  try{
+    const raw = await callGemini([{ text: prompt }]);
+    const cleaned = stripJsonFence(raw);
+    const formats = JSON.parse(cleaned);
+    renderFormatChips(formats);
+    setStatus(statusEl, 'ok', `${formats.length} format ditemukan. Pilih salah satu.`);
+  }catch(e){
+    setStatus(statusEl, 'err', 'Gagal: ' + e.message);
+  }
+}
+
+function renderFormatChips(formats){
+  const container = $('formatChips');
+  container.innerHTML = '';
+  formats.forEach(f => {
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.textContent = f;
+    chip.addEventListener('click', () => selectFormat(f, chip));
+    container.appendChild(chip);
+  });
+}
+
+function selectFormat(format, chipEl){
+  videoState.selectedFormat = format;
+  document.querySelectorAll('#formatChips .chip').forEach(c => c.classList.remove('selected'));
+  chipEl.classList.add('selected');
+
+  $('formatSelectedPill').style.display = 'inline-block';
+  $('formatSelectedPill').textContent = format;
+  $('generateVideoSection').classList.add('active');
+  $('videoOutput').classList.remove('show');
+  $('btnRegenerateVideo').style.display = 'none';
+  $('btnCopyVideo').style.display = 'none';
+}
+
+function buildVideoCreativePrompt(){
+  const data = collectVideoProduct();
+  const avoidHooks = videoState.usedHooks.length
+    ? `HOOK YANG SUDAH PERNAH DIPAKAI DI GENERATE SEBELUMNYA (JANGAN DIULANG, buat yang beda): ${JSON.stringify(videoState.usedHooks)}`
+    : '';
+  const avoidCtas = videoState.usedCtas.length
+    ? `CTA YANG SUDAH PERNAH DIPAKAI (JANGAN DIULANG): ${JSON.stringify(videoState.usedCtas)}`
+    : '';
+
+  return `SYSTEM ROLE
+Kamu adalah META ADS CREATIVE MOTIVE ENGINE v1.0. Peranmu adalah Meta Ads Creative Strategist, bukan copywriter biasa. Creative harus dibangun dari buying motive, bukan asal script.
+
+KONTEKS YANG SUDAH DITENTUKAN (jangan diubah, jangan tanya ulang):
+Produk: ${data.nama}
+Kategori: ${data.kategori}
+Deskripsi: ${data.deskripsi || '-'}
+Buying Motive Terpilih: ${videoState.selectedMotive}
+Creative Format Terpilih: ${videoState.selectedFormat}
+
+TUGAS: Buat SATU creative concept kuat, mengeksekusi motif & format di atas, dengan struktur 3 scene berikut:
+Scene 1 — HOOK: maksimal 3 detik untuk stop scroll. Pattern interrupt. Curiosity tinggi. JANGAN perkenalkan produk dulu. Fokus emosi.
+Scene 2 — PROBLEM: tunjukkan pain & konsekuensinya. Naikkan intensitas emosi. Transisi natural.
+Scene 3 — SOLUTION + CTA: perkenalkan produk secara natural, tunjukkan transformasi, CTA kuat tapi tetap soft.
+
+ATURAN VISUAL — tiap scene WAJIB berisi: visual description, camera movement, facial expression (kalau relevan), lighting, environment, composition/motion, text overlay, voice over, sound effect, background music, transition. Field yang tidak relevan boleh dikosongkan string kosong, tapi field-nya tetap harus ada.
+
+ATURAN HOOK: jangan pakai hook lemah. Hook harus memicu salah satu dari: curiosity, fear, desire, identity, shock, contrarian, status, loss aversion, atau pattern interrupt. Tulis dalam Bahasa Indonesia natural, gaya kayak "Orang pintar justru melakukan ini...", "Kalau masih begini, siap-siap...", "99% orang salah...", dsb — tapi buat versi ORIGINAL sesuai produk ini, jangan pakai contoh generik ini mentah-mentah.
+
+ATURAN VOICE OVER: Bahasa Indonesia natural, conversational, tidak kaku/robotic, tidak ada klaim berlebihan, tidak ada fake urgency.
+
+ATURAN TEXT OVERLAY: maksimal 8 kata per overlay, gampang dibaca.
+
+ATURAN CTA: soft CTA, gaya "Pelajari selengkapnya", "Lihat caranya", "Klik untuk tahu lebih banyak", "Coba sekarang" — atau variasi natural lain, jangan hard-selling maksa.
+
+${avoidHooks}
+${avoidCtas}
+
+OUTPUT FORMAT: Balas HANYA dengan SATU JSON, tanpa markdown, tanpa backtick, tanpa penjelasan/catatan tambahan. Ikuti struktur PERSIS ini, isi semua field (jangan ada yang kosong kecuali memang tidak relevan):
+{
+  "creative_strategy": {
+    "product": "${data.nama}",
+    "selected_motive": "${videoState.selectedMotive}",
+    "selected_format": "${videoState.selectedFormat}",
+    "target_emotion": "",
+    "primary_angle": ""
+  },
+  "video": {
+    "ratio": "${data.ratio}",
+    "duration": "${data.durasiTotal}",
+    "scene_duration": "${data.durasiScene}",
+    "total_scene": 3
+  },
+  "scene_1": {
+    "purpose": "Hook",
+    "visual": "", "camera": "", "lighting": "", "environment": "", "motion": "",
+    "text_overlay": "", "voice_over": "", "sound_effect": "", "background_music": "", "transition": ""
+  },
+  "scene_2": {
+    "purpose": "Problem",
+    "visual": "", "camera": "", "lighting": "", "environment": "", "motion": "",
+    "text_overlay": "", "voice_over": "", "sound_effect": "", "background_music": "", "transition": ""
+  },
+  "scene_3": {
+    "purpose": "Solution + CTA",
+    "visual": "", "camera": "", "lighting": "", "environment": "", "motion": "",
+    "text_overlay": "", "voice_over": "", "sound_effect": "", "background_music": "", "transition": ""
+  }
+}
+
+PRIORITASKAN scroll-stopping creative dibanding visual yang cuma estetik. Optimalkan untuk CTR, Hook Rate, Hold Rate, dan Conversion Rate.`;
+}
+
+async function generateVideoCreative(){
+  const statusEl = $('statusVideo');
+  if(!videoState.selectedMotive || !videoState.selectedFormat){
+    setStatus(statusEl, 'err', 'Pilih motif dan format dulu.');
+    return;
+  }
+  setStatus(statusEl, 'pending', 'Generating creative JSON...');
+  const outputEl = $('videoOutput');
+  outputEl.classList.remove('show');
+
+  try{
+    const prompt = buildVideoCreativePrompt();
+    const raw = await callGemini([{ text: prompt }]);
+    const cleaned = stripJsonFence(raw);
+    let parsed, pretty;
+    try{
+      parsed = JSON.parse(cleaned);
+      pretty = JSON.stringify(parsed, null, 2);
+    }catch(_){
+      pretty = cleaned;
+      parsed = null;
+    }
+    outputEl.textContent = pretty;
+    outputEl.classList.add('show');
+    outputEl.dataset.raw = pretty;
+
+    if(parsed){
+      const hook = parsed.scene_1 && parsed.scene_1.text_overlay;
+      const cta = parsed.scene_3 && parsed.scene_3.text_overlay;
+      if(hook) videoState.usedHooks.push(hook);
+      if(cta) videoState.usedCtas.push(cta);
+    }
+
+    $('btnRegenerateVideo').style.display = 'inline-block';
+    $('btnCopyVideo').style.display = 'inline-block';
+    setStatus(statusEl, 'ok', 'Selesai. Mau variasi lain? Klik "Generate Variasi Baru".');
+  }catch(e){
+    setStatus(statusEl, 'err', 'Gagal: ' + e.message);
+  }
+}
+
+function resetVideoWizard(){
+  videoState.selectedMotive = null;
+  videoState.selectedFormat = null;
+  videoState.usedHooks = [];
+  videoState.usedCtas = [];
+  $('motiveChips').innerHTML = '';
+  $('formatChips').innerHTML = '';
+  $('motiveSelectedPill').style.display = 'none';
+  $('formatSelectedPill').style.display = 'none';
+  $('formatSection').classList.remove('active');
+  $('generateVideoSection').classList.remove('active');
+  $('videoOutput').classList.remove('show');
+  $('videoOutput').textContent = '';
+  $('btnRegenerateVideo').style.display = 'none';
+  $('btnCopyVideo').style.display = 'none';
+  clearStatus($('statusMotives'));
+  clearStatus($('statusFormats'));
+  clearStatus($('statusVideo'));
+}
+
+/* ---------------------------------------------------------
    ADMIN PANEL — kelola user lewat /api/users
 --------------------------------------------------------- */
 function authHeader(){
@@ -1247,6 +1713,19 @@ function initTool(){
   $('btnGenAll').addEventListener('click', generateAll);
   $('btnDownloadAll').addEventListener('click', downloadAll);
   $('btnAddUser').addEventListener('click', addUser);
+
+  $('tabLP').addEventListener('click', () => switchMode('lp'));
+  $('tabVideo').addEventListener('click', () => switchMode('video'));
+  $('btnAnalyzeMotives').addEventListener('click', analyzeMotives);
+  $('btnAnalyzeFormats').addEventListener('click', analyzeFormats);
+  $('btnGenerateVideo').addEventListener('click', generateVideoCreative);
+  $('btnRegenerateVideo').addEventListener('click', generateVideoCreative);
+  $('btnResetWizard').addEventListener('click', resetVideoWizard);
+  $('btnCopyVideo').addEventListener('click', () => {
+    const text = $('videoOutput').dataset.raw;
+    if(!text){ toast('Belum ada hasil untuk di-copy'); return; }
+    copyText(text);
+  });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
