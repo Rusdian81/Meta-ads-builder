@@ -656,6 +656,11 @@
         <div class="field">
           <label for="vDeskripsi">Deskripsi Singkat Produk</label>
           <textarea id="vDeskripsi" rows="3" placeholder="Apa produknya, siapa target pembelinya, masalah apa yang diselesaikan"></textarea>
+          <div class="row-actions" style="margin-top:8px;">
+            <button class="secondary small" id="btnAutoDeskripsiVideo">Generate Deskripsi Otomatis</button>
+            <span class="hint" id="statusAutoDeskripsiVideoHint">Isi minimal Nama Produk dulu.</span>
+          </div>
+          <div class="status" id="statusAutoDeskripsiVideo"></div>
         </div>
         <div class="grid3">
           <div class="field">
@@ -675,7 +680,19 @@
             <input type="text" id="vDurasiScene" value="8s">
           </div>
         </div>
-        <div class="hint">Struktur creative-nya fixed 3 scene: Hook → Problem → Solution+CTA (sesuai master chain kamu). Durasi tinggal disesuaikan.</div>
+        <div class="field">
+          <label for="vJumlahScene">Jumlah Scene</label>
+          <select id="vJumlahScene">
+            <option value="2">2 scene — Hook → Solution+CTA (super pendek)</option>
+            <option value="3" selected>3 scene — Hook → Problem → Solution+CTA</option>
+            <option value="4">4 scene — Hook → Problem → Solution → CTA</option>
+            <option value="5">5 scene — Hook → Problem → Agitate → Solution → CTA</option>
+            <option value="6">6 scene — + Benefit/Proof sebelum CTA</option>
+            <option value="7">7 scene — + Social Proof/Testimonial</option>
+            <option value="8">8 scene — + Social Proof/Testimonial + Urgency/Offer</option>
+          </select>
+          <div class="hint" id="sceneStructureHint">Makin banyak scene, makin banyak "amunisi psikologis" sebelum CTA — bukan cuma diperpanjang durasinya doang.</div>
+        </div>
       </div>
     </section>
 
@@ -706,7 +723,7 @@
 
     <!-- VIDEO STEP 3: GENERATE -->
     <section class="block wizard-step" id="generateVideoSection">
-      <div class="block-head"><span class="num">04</span><div><h2>Generate Creative JSON</h2><div class="sub">Scene 1 Hook, Scene 2 Problem, Scene 3 Solution+CTA — lengkap visual, camera, VO, text overlay, sound.<span class="selected-pill" id="formatSelectedPill" style="display:none;"></span></div></div></div>
+      <div class="block-head"><span class="num">04</span><div><h2>Generate Creative JSON</h2><div class="sub" id="generateVideoSub">Lengkap visual, camera, VO, text overlay, sound per scene.<span class="selected-pill" id="formatSelectedPill" style="display:none;"></span></div></div></div>
       <div class="block-body">
         <div class="row-actions">
           <button id="btnGenerateVideo">Generate Creative JSON</button>
@@ -1330,6 +1347,36 @@ const videoState = {
   usedCtas: []
 };
 
+/* Struktur purpose per scene, makin banyak scene makin banyak "amunisi psikologis"
+   sebelum CTA — bukan cuma neken beat yang sama ke jumlah scene yang lebih banyak. */
+const SCENE_STRUCTURES = {
+  2: ['Hook', 'Solution + CTA'],
+  3: ['Hook', 'Problem', 'Solution + CTA'],
+  4: ['Hook', 'Problem', 'Solution', 'CTA'],
+  5: ['Hook', 'Problem', 'Agitate', 'Solution', 'CTA'],
+  6: ['Hook', 'Problem', 'Agitate', 'Solution', 'Benefit/Proof', 'CTA'],
+  7: ['Hook', 'Problem', 'Agitate', 'Solution', 'Benefit/Proof', 'Social Proof/Testimonial', 'CTA'],
+  8: ['Hook', 'Problem', 'Agitate', 'Solution', 'Benefit/Proof', 'Social Proof/Testimonial', 'Urgency/Offer', 'CTA']
+};
+
+function getSceneStructure(){
+  const n = Math.max(2, Math.min(8, parseInt($('vJumlahScene').value, 10) || 3));
+  return SCENE_STRUCTURES[n];
+}
+
+function updateSceneStructureHint(){
+  const structure = getSceneStructure();
+  const preview = structure.join(' → ');
+  const hintEl = $('sceneStructureHint');
+  if(hintEl) hintEl.textContent = `Struktur: ${preview}`;
+  const subEl = $('generateVideoSub');
+  if(subEl){
+    const pill = subEl.querySelector('.selected-pill');
+    subEl.textContent = `${structure.length} scene: ${preview} — lengkap visual, camera, VO, text overlay, sound.`;
+    if(pill) subEl.appendChild(pill);
+  }
+}
+
 function collectVideoProduct(){
   return {
     nama: $('vNama').value.trim(),
@@ -1337,8 +1384,39 @@ function collectVideoProduct(){
     deskripsi: $('vDeskripsi').value.trim(),
     ratio: $('vRatio').value,
     durasiTotal: $('vDurasiTotal').value.trim() || '24s',
-    durasiScene: $('vDurasiScene').value.trim() || '8s'
+    durasiScene: $('vDurasiScene').value.trim() || '8s',
+    jumlahScene: Math.max(2, Math.min(8, parseInt($('vJumlahScene').value, 10) || 3))
   };
+}
+
+async function autoGenerateVideoDescription(){
+  const statusEl = $('statusAutoDeskripsiVideo');
+  const nama = $('vNama').value.trim();
+  const kategori = $('vKategori').value;
+
+  if(!nama){
+    setStatus(statusEl, 'err', 'Isi minimal Nama Produk dulu di atas biar hasilnya relevan.');
+    return;
+  }
+
+  setStatus(statusEl, 'pending', 'Menyusun deskripsi produk...');
+
+  const prompt = `Kamu adalah Meta Ads Creative Strategist untuk kategori produk: ${kategori}.
+
+PRODUK: ${nama}
+KATEGORI: ${kategori}
+
+TUGAS: Tulis deskripsi singkat produk ini dalam 1 paragraf (3-4 kalimat) Bahasa Indonesia: apa produknya, siapa target pembelinya, dan masalah/kebutuhan apa yang diselesaikan. Fokus ke konteks yang berguna buat menentukan buying motive & creative video ads, bukan copy jualan. Jangan mengarang klaim medis/khasiat berlebihan atau klaim yang belum tentu benar. Sesuaikan istilah dengan kategori produknya.
+
+Balas HANYA dengan teks paragraf deskripsinya saja, tanpa markdown, tanpa judul, tanpa tanda kutip, tanpa penjelasan tambahan.`;
+
+  try{
+    const out = await callGemini([{ text: prompt }]);
+    $('vDeskripsi').value = out.trim().replace(/^"+|"+$/g, '');
+    setStatus(statusEl, 'ok', 'Deskripsi terisi otomatis — cek & edit sesuai kebutuhan.');
+  }catch(e){
+    setStatus(statusEl, 'err', 'Gagal: ' + e.message);
+  }
 }
 
 async function analyzeMotives(){
@@ -1460,14 +1538,41 @@ function selectFormat(format, chipEl){
   $('btnCopyVideo').style.display = 'none';
 }
 
+/* Panduan singkat per purpose, dipakai buat nge-brief AI supaya tiap purpose
+   punya arahan jelas biarpun jumlah scene-nya berubah-ubah. */
+const SCENE_PURPOSE_GUIDE = {
+  'Hook': 'maksimal 3 detik untuk stop scroll. Pattern interrupt. Curiosity tinggi. JANGAN perkenalkan produk dulu. Fokus emosi.',
+  'Problem': 'tunjukkan pain & konsekuensinya. Naikkan intensitas emosi. Transisi natural dari hook.',
+  'Agitate': 'gali lebih dalam akibat/konsekuensi dari pain di scene sebelumnya — perbesar urgensi kenapa masalah ini harus diselesaikan SEKARANG, sebelum solusi muncul.',
+  'Solution': 'perkenalkan produk secara natural sebagai jawaban dari pain/agitate sebelumnya, tunjukkan transformasi/hasil.',
+  'Solution + CTA': 'perkenalkan produk secara natural, tunjukkan transformasi, lalu CTA kuat tapi tetap soft di scene yang sama.',
+  'Benefit/Proof': 'perkuat kepercayaan lewat benefit konkret produk atau bukti (before/after, data, demo singkat) — sebelum masuk closing.',
+  'Social Proof/Testimonial': 'tunjukkan validasi dari orang lain (kutipan/reaksi testimoni singkat, gaya UGC) untuk memperkuat kepercayaan sebelum closing.',
+  'Urgency/Offer': 'tekankan urgensi/penawaran (stok terbatas, promo, dsb) secara jujur — bukan fake urgency — untuk mendorong keputusan sebelum CTA final.',
+  'CTA': 'closing yang jelas dan kuat tapi tetap soft, dorong satu aksi konkret.'
+};
+
 function buildVideoCreativePrompt(){
   const data = collectVideoProduct();
+  const structure = getSceneStructure();
   const avoidHooks = videoState.usedHooks.length
     ? `HOOK YANG SUDAH PERNAH DIPAKAI DI GENERATE SEBELUMNYA (JANGAN DIULANG, buat yang beda): ${JSON.stringify(videoState.usedHooks)}`
     : '';
   const avoidCtas = videoState.usedCtas.length
     ? `CTA YANG SUDAH PERNAH DIPAKAI (JANGAN DIULANG): ${JSON.stringify(videoState.usedCtas)}`
     : '';
+
+  const structureLines = structure
+    .map((purpose, i) => `Scene ${i + 1} — ${purpose.toUpperCase()}: ${SCENE_PURPOSE_GUIDE[purpose] || ''}`)
+    .join('\n');
+
+  const sceneSchema = structure
+    .map((purpose, i) => `  "scene_${i + 1}": {
+    "purpose": "${purpose}",
+    "visual": "", "camera": "", "lighting": "", "environment": "", "motion": "",
+    "text_overlay": "", "voice_over": "", "sound_effect": "", "background_music": "", "transition": ""
+  }`)
+    .join(',\n');
 
   return `SYSTEM ROLE
 Kamu adalah META ADS CREATIVE MOTIVE ENGINE v1.0. Peranmu adalah Meta Ads Creative Strategist, bukan copywriter biasa. Creative harus dibangun dari buying motive, bukan asal script.
@@ -1479,10 +1584,10 @@ Deskripsi: ${data.deskripsi || '-'}
 Buying Motive Terpilih: ${videoState.selectedMotive}
 Creative Format Terpilih: ${videoState.selectedFormat}
 
-TUGAS: Buat SATU creative concept kuat, mengeksekusi motif & format di atas, dengan struktur 3 scene berikut:
-Scene 1 — HOOK: maksimal 3 detik untuk stop scroll. Pattern interrupt. Curiosity tinggi. JANGAN perkenalkan produk dulu. Fokus emosi.
-Scene 2 — PROBLEM: tunjukkan pain & konsekuensinya. Naikkan intensitas emosi. Transisi natural.
-Scene 3 — SOLUTION + CTA: perkenalkan produk secara natural, tunjukkan transformasi, CTA kuat tapi tetap soft.
+TUGAS: Buat SATU creative concept kuat, mengeksekusi motif & format di atas, dengan struktur ${structure.length} scene berikut (jangan tambah/kurangi jumlah scene, ikuti persis urutan ini):
+${structureLines}
+
+Catatan pacing: makin banyak jumlah scene, makin banyak "amunisi psikologis" yang perlu digali sebelum CTA (bukan cuma beat yang sama diperpanjang durasinya) — tiap scene harus punya kontribusi psikologis yang jelas dan berbeda dari scene lain.
 
 ATURAN VISUAL — tiap scene WAJIB berisi: visual description, camera movement, facial expression (kalau relevan), lighting, environment, composition/motion, text overlay, voice over, sound effect, background music, transition. Field yang tidak relevan boleh dikosongkan string kosong, tapi field-nya tetap harus ada.
 
@@ -1510,23 +1615,9 @@ OUTPUT FORMAT: Balas HANYA dengan SATU JSON, tanpa markdown, tanpa backtick, tan
     "ratio": "${data.ratio}",
     "duration": "${data.durasiTotal}",
     "scene_duration": "${data.durasiScene}",
-    "total_scene": 3
+    "total_scene": ${structure.length}
   },
-  "scene_1": {
-    "purpose": "Hook",
-    "visual": "", "camera": "", "lighting": "", "environment": "", "motion": "",
-    "text_overlay": "", "voice_over": "", "sound_effect": "", "background_music": "", "transition": ""
-  },
-  "scene_2": {
-    "purpose": "Problem",
-    "visual": "", "camera": "", "lighting": "", "environment": "", "motion": "",
-    "text_overlay": "", "voice_over": "", "sound_effect": "", "background_music": "", "transition": ""
-  },
-  "scene_3": {
-    "purpose": "Solution + CTA",
-    "visual": "", "camera": "", "lighting": "", "environment": "", "motion": "",
-    "text_overlay": "", "voice_over": "", "sound_effect": "", "background_music": "", "transition": ""
-  }
+${sceneSchema}
 }
 
 PRIORITASKAN scroll-stopping creative dibanding visual yang cuma estetik. Optimalkan untuk CTR, Hook Rate, Hold Rate, dan Conversion Rate.`;
@@ -1559,8 +1650,10 @@ async function generateVideoCreative(){
     outputEl.dataset.raw = pretty;
 
     if(parsed){
+      const totalScene = (parsed.video && parsed.video.total_scene) || getSceneStructure().length;
+      const lastScene = parsed[`scene_${totalScene}`];
       const hook = parsed.scene_1 && parsed.scene_1.text_overlay;
-      const cta = parsed.scene_3 && parsed.scene_3.text_overlay;
+      const cta = lastScene && lastScene.text_overlay;
       if(hook) videoState.usedHooks.push(hook);
       if(cta) videoState.usedCtas.push(cta);
     }
@@ -1706,6 +1799,7 @@ function initTool(){
   toolInitialized = true;
   $('schemaText').textContent = SCHEMA_TEXT;
   renderSectionCards();
+  updateSceneStructureHint();
   $('btnTest').addEventListener('click', testConnection);
   $('btnAnalyze').addEventListener('click', analyzeImage);
   $('btnAutoCopy').addEventListener('click', autoGenerateCopy);
@@ -1716,6 +1810,8 @@ function initTool(){
 
   $('tabLP').addEventListener('click', () => switchMode('lp'));
   $('tabVideo').addEventListener('click', () => switchMode('video'));
+  $('btnAutoDeskripsiVideo').addEventListener('click', autoGenerateVideoDescription);
+  $('vJumlahScene').addEventListener('change', updateSceneStructureHint);
   $('btnAnalyzeMotives').addEventListener('click', analyzeMotives);
   $('btnAnalyzeFormats').addEventListener('click', analyzeFormats);
   $('btnGenerateVideo').addEventListener('click', generateVideoCreative);
