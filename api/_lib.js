@@ -33,11 +33,8 @@ async function kvSetJSON(key, valueObj) {
   const { url, token } = kvBase();
   const res = await fetch(`${url}/set/${encodeURIComponent(key)}`, {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(JSON.stringify(valueObj))
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(valueObj)
   });
   if (!res.ok) throw new Error(`KV error ${res.status}`);
 }
