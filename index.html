@@ -496,6 +496,10 @@
         <label for="refImage">Upload Gambar Referensi</label>
         <input type="file" id="refImage" accept="image/*">
         <img id="refPreview" class="preview-img">
+        <div class="row-actions" id="refImageActions" style="display:none; margin-top:8px;">
+          <button type="button" class="secondary small" id="btnChangeRefImage">Ganti Foto</button>
+          <button type="button" class="secondary small" id="btnClearRefImage">Hapus Foto</button>
+        </div>
       </div>
       <div class="row-actions">
         <button id="btnAnalyze">Analisa Gaya Visual</button>
@@ -657,6 +661,10 @@
           <label for="vProductImage">Foto Produk (dianalisa AI untuk bikin deskripsi lebih presisi)</label>
           <input type="file" id="vProductImage" accept="image/*">
           <img id="vProductPreview" class="preview-img">
+          <div class="row-actions" id="vProductImageActions" style="display:none; margin-top:8px;">
+            <button type="button" class="secondary small" id="btnChangeProductImage">Ganti Foto</button>
+            <button type="button" class="secondary small" id="btnClearProductImage">Hapus Foto</button>
+          </div>
           <div class="hint">Upload foto produk asli — AI akan "lihat" bentuk, kemasan, warna, dan detail visualnya, bukan cuma nebak dari nama produk.</div>
         </div>
         <div class="field">
@@ -677,6 +685,10 @@
           <label for="vTalentImage">Foto Model/Talent (opsional)</label>
           <input type="file" id="vTalentImage" accept="image/*">
           <img id="vTalentPreview" class="preview-img">
+          <div class="row-actions" id="vTalentImageActions" style="display:none; margin-top:8px;">
+            <button type="button" class="secondary small" id="btnChangeTalentImage">Ganti Foto</button>
+            <button type="button" class="secondary small" id="btnClearTalentImage">Hapus Foto</button>
+          </div>
           <div class="row-actions" style="margin-top:8px;">
             <button class="secondary small" id="btnAnalyzeTalent">Deskripsikan dari Foto</button>
           </div>
@@ -1257,6 +1269,7 @@ function handleImageUpload(e){
     const preview = $('refPreview');
     preview.src = dataUrl;
     preview.style.display = 'block';
+    $('refImageActions').style.display = 'flex';
   });
 }
 
@@ -1271,6 +1284,7 @@ function handleVideoProductImageUpload(e){
     const preview = $('vProductPreview');
     preview.src = dataUrl;
     preview.style.display = 'block';
+    $('vProductImageActions').style.display = 'flex';
   });
 }
 
@@ -1285,6 +1299,30 @@ function handleTalentImageUpload(e){
     const preview = $('vTalentPreview');
     preview.src = dataUrl;
     preview.style.display = 'block';
+    $('vTalentImageActions').style.display = 'flex';
+  });
+}
+
+/* Tombol "Ganti Foto" & "Hapus Foto" generik — biar bisa ganti-ganti gambar
+   tanpa perlu refresh halaman sama sekali. */
+function setupImageReplaceControls(opts){
+  const input = $(opts.inputId);
+  const preview = $(opts.previewId);
+  const actions = $(opts.actionsId);
+  const changeBtn = $(opts.changeBtnId);
+  const clearBtn = $(opts.clearBtnId);
+
+  changeBtn.addEventListener('click', () => {
+    input.value = ''; // reset dulu biar file yang sama pun tetap trigger 'change'
+    input.click();
+  });
+
+  clearBtn.addEventListener('click', () => {
+    input.value = '';
+    preview.src = '';
+    preview.style.display = 'none';
+    actions.style.display = 'none';
+    opts.onClear();
   });
 }
 
@@ -2096,6 +2134,23 @@ function initTool(){
 
   $('tabLP').addEventListener('click', () => switchMode('lp'));
   $('tabVideo').addEventListener('click', () => switchMode('video'));
+
+  setupImageReplaceControls({
+    inputId: 'refImage', previewId: 'refPreview', actionsId: 'refImageActions',
+    changeBtnId: 'btnChangeRefImage', clearBtnId: 'btnClearRefImage',
+    onClear: () => { refImageBase64 = null; refImageMime = null; }
+  });
+  setupImageReplaceControls({
+    inputId: 'vProductImage', previewId: 'vProductPreview', actionsId: 'vProductImageActions',
+    changeBtnId: 'btnChangeProductImage', clearBtnId: 'btnClearProductImage',
+    onClear: () => { vProductImageBase64 = null; vProductImageMime = null; }
+  });
+  setupImageReplaceControls({
+    inputId: 'vTalentImage', previewId: 'vTalentPreview', actionsId: 'vTalentImageActions',
+    changeBtnId: 'btnChangeTalentImage', clearBtnId: 'btnClearTalentImage',
+    onClear: () => { vTalentImageBase64 = null; vTalentImageMime = null; }
+  });
+
   $('vProductImage').addEventListener('change', handleVideoProductImageUpload);
   $('btnAutoDeskripsiVideo').addEventListener('click', autoGenerateVideoDescription);
   $('vTalentImage').addEventListener('change', handleTalentImageUpload);
