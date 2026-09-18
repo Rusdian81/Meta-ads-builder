@@ -484,6 +484,7 @@
   <div class="mode-tabs">
     <button class="mode-tab active" id="tabLP">LP Forge</button>
     <button class="mode-tab" id="tabVideo">Video Ads (Meta Ads)</button>
+    <button class="mode-tab" id="tabCarousel">Image Carousel (Meta Ads)</button>
   </div>
 
   <div id="modeLP">
@@ -768,6 +769,144 @@
 
   </div>
   <!-- /#modeVideo -->
+
+  <div id="modeCarousel" style="display:none;">
+
+    <!-- CAROUSEL STEP 0: DATA PRODUK -->
+    <section class="block">
+      <div class="block-head"><span class="num">01</span><div><h2>Data Produk (Image Carousel)</h2><div class="sub">Konteks dasar buat nentuin buying motive & format carousel yang cocok.</div></div></div>
+      <div class="block-body">
+        <div class="grid2">
+          <div class="field">
+            <label for="cNama">Nama Produk / Jasa</label>
+            <input type="text" id="cNama" placeholder="mis. Gumora Herbal Oil">
+          </div>
+          <div class="field">
+            <label for="cKategori">Kategori Produk</label>
+            <select id="cKategori">
+              <option value="Herbal/Kesehatan">Herbal / Kesehatan</option>
+              <option value="Kecantikan/Skincare">Kecantikan / Skincare</option>
+              <option value="Fashion/Aksesoris">Fashion / Aksesoris</option>
+              <option value="Gadget/Elektronik">Gadget / Elektronik</option>
+              <option value="Makanan/Minuman">Makanan / Minuman</option>
+              <option value="Ibu & Anak">Ibu & Anak</option>
+              <option value="Rumah Tangga">Rumah Tangga</option>
+              <option value="Digital/Kursus">Digital / Kursus / Jasa</option>
+              <option value="Lainnya">Lainnya (tulis di Deskripsi)</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="cProductImage">Foto Produk (dianalisa AI untuk bikin deskripsi lebih presisi)</label>
+          <input type="file" id="cProductImage" accept="image/*">
+          <img id="cProductPreview" class="preview-img">
+          <div class="row-actions" id="cProductImageActions" style="display:none; margin-top:8px;">
+            <button type="button" class="secondary small" id="btnChangeProductImageC">Ganti Foto</button>
+            <button type="button" class="secondary small" id="btnClearProductImageC">Hapus Foto</button>
+          </div>
+          <div class="hint">Upload foto produk asli — AI akan "lihat" bentuk, kemasan, warna, dan detail visualnya, bukan cuma nebak dari nama produk.</div>
+        </div>
+        <div class="field">
+          <label for="cDeskripsi">Deskripsi Singkat Produk</label>
+          <textarea id="cDeskripsi" rows="3" placeholder="Apa produknya, siapa target pembelinya, masalah apa yang diselesaikan"></textarea>
+          <div class="row-actions" style="margin-top:8px;">
+            <button class="secondary small" id="btnAutoDeskripsiCarousel">Generate Deskripsi dari Foto</button>
+            <span class="hint" id="statusAutoDeskripsiCarouselHint">Upload foto produk dulu di atas.</span>
+          </div>
+          <div class="status" id="statusAutoDeskripsiCarousel"></div>
+        </div>
+        <div class="field">
+          <label for="cProductVisualAnchor">Detail Visual Produk (Anchor Konsistensi Antar Card)</label>
+          <textarea id="cProductVisualAnchor" rows="2" placeholder="mis. botol amber 350ml, tutup putih, label hijau-kuning bertuliskan nama produk, bentuk silinder ramping"></textarea>
+          <div class="hint">Terisi otomatis bareng "Generate Deskripsi dari Foto" di atas. Teks ini akan ditempel PERSIS SAMA di setiap card yang menampilkan produk, biar warna/bentuk/kemasan nggak berubah-ubah antar card.</div>
+        </div>
+        <div class="field">
+          <label for="cTalentImage">Foto Model/Talent (opsional)</label>
+          <input type="file" id="cTalentImage" accept="image/*">
+          <img id="cTalentPreview" class="preview-img">
+          <div class="row-actions" id="cTalentImageActions" style="display:none; margin-top:8px;">
+            <button type="button" class="secondary small" id="btnChangeTalentImageC">Ganti Foto</button>
+            <button type="button" class="secondary small" id="btnClearTalentImageC">Hapus Foto</button>
+          </div>
+          <div class="row-actions" style="margin-top:8px;">
+            <button class="secondary small" id="btnAnalyzeTalentCarousel">Deskripsikan dari Foto</button>
+          </div>
+          <div class="status" id="statusTalentCarousel"></div>
+        </div>
+        <div class="field">
+          <label for="cTalentDeskripsi">Deskripsi Model/Talent (opsional)</label>
+          <textarea id="cTalentDeskripsi" rows="2" placeholder="mis. wanita ~25-30 tahun, gaya casual, ekspresi ramah — kosongkan kalau carousel tidak menampilkan orang"></textarea>
+          <div class="hint">Opsional. Isi manual, atau upload foto di atas lalu klik "Deskripsikan dari Foto". Dipakai sebagai referensi visual talent supaya konsisten di tiap card.</div>
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <label for="cRatio">Rasio Gambar Card</label>
+            <select id="cRatio">
+              <option value="1:1">1:1 (Square — standar carousel)</option>
+              <option value="4:5">4:5 (Portrait — lebih tinggi di feed)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="cJumlahCard">Jumlah Card</label>
+            <select id="cJumlahCard">
+              <option value="3">3 card — Hook → Solusi/Benefit → CTA</option>
+              <option value="4" selected>4 card — Hook → Problem → Solusi → CTA</option>
+              <option value="5">5 card — Hook → Problem → Solusi → Benefit/Proof → CTA</option>
+              <option value="6">6 card — + Agitate (pain digali lebih dalam)</option>
+              <option value="7">7 card — + Benefit tambahan ke-2</option>
+              <option value="8">8 card — + Social Proof/Testimonial</option>
+              <option value="9">9 card — + Urgency/Offer</option>
+              <option value="10">10 card (maksimal Meta) — showcase paling lengkap</option>
+            </select>
+          </div>
+        </div>
+        <div class="hint" id="carouselStructureHint">Tiap card = 1 gambar + 1 headline pendek. Card pertama harus scroll-stopping, card terakhir harus closing/CTA jelas.</div>
+      </div>
+    </section>
+
+    <!-- CAROUSEL STEP 1: MOTIVE -->
+    <section class="block">
+      <div class="block-head"><span class="num">02</span><div><h2>Buying Motive</h2><div class="sub">Kenapa orang bakal beli produk ini — psikologi dulu, baru creative.</div></div></div>
+      <div class="block-body">
+        <div class="row-actions">
+          <button id="btnAnalyzeMotivesCarousel">Analisa Buying Motive</button>
+          <span class="hint" id="motiveHintCarousel">Isi Nama Produk dulu di atas.</span>
+        </div>
+        <div class="status" id="statusMotivesCarousel"></div>
+        <div class="chip-grid" id="motiveChipsCarousel"></div>
+      </div>
+    </section>
+
+    <!-- CAROUSEL STEP 2: FORMAT -->
+    <section class="block wizard-step" id="formatSectionCarousel">
+      <div class="block-head"><span class="num">03</span><div><h2>Creative Format</h2><div class="sub">Format carousel yang paling cocok buat motif yang dipilih.<span class="selected-pill" id="motiveSelectedPillCarousel" style="display:none;"></span></div></div></div>
+      <div class="block-body">
+        <div class="row-actions">
+          <button id="btnAnalyzeFormatsCarousel">Analisa Creative Format</button>
+        </div>
+        <div class="status" id="statusFormatsCarousel"></div>
+        <div class="chip-grid" id="formatChipsCarousel"></div>
+      </div>
+    </section>
+
+    <!-- CAROUSEL STEP 3: GENERATE -->
+    <section class="block wizard-step" id="generateCarouselSection">
+      <div class="block-head"><span class="num">04</span><div><h2>Generate Carousel JSON</h2><div class="sub" id="generateCarouselSub">Lengkap visual prompt, headline, description, CTA button per card.<span class="selected-pill" id="formatSelectedPillCarousel" style="display:none;"></span></div></div></div>
+      <div class="block-body">
+        <div class="row-actions">
+          <button id="btnGenerateCarousel">Generate Carousel JSON</button>
+          <button class="secondary" id="btnRegenerateCarousel" style="display:none;">Generate Variasi Baru</button>
+          <button class="secondary small" id="btnCopyCarousel" style="display:none;">Copy Semua JSON</button>
+          <button class="secondary small" id="btnResetWizardCarousel">Reset Wizard</button>
+        </div>
+        <div class="status" id="statusCarousel"></div>
+        <pre class="output" id="carouselOutputRaw"></pre>
+        <div id="carouselOutputBlocks"></div>
+      </div>
+    </section>
+
+  </div>
+  <!-- /#modeCarousel -->
 
   <footer class="note">
     <strong>Cara pakai singkat:</strong> isi API key → upload gambar referensi & analisa → isi data produk → generate tiap section → copy JSON ke tool image-generation/overlay-renderer kamu masing-masing (mis. Nano Banana, Imagen, atau engine overlay video kamu yang di-adaptasi untuk gambar statis).<br><br>
@@ -1303,6 +1442,36 @@ function handleTalentImageUpload(e){
   });
 }
 
+let cProductImageBase64 = null;
+let cProductImageMime = null;
+function handleCarouselProductImageUpload(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  readImageAsBase64(file).then(({ mime, base64, dataUrl }) => {
+    cProductImageMime = mime;
+    cProductImageBase64 = base64;
+    const preview = $('cProductPreview');
+    preview.src = dataUrl;
+    preview.style.display = 'block';
+    $('cProductImageActions').style.display = 'flex';
+  });
+}
+
+let cTalentImageBase64 = null;
+let cTalentImageMime = null;
+function handleCarouselTalentImageUpload(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  readImageAsBase64(file).then(({ mime, base64, dataUrl }) => {
+    cTalentImageMime = mime;
+    cTalentImageBase64 = base64;
+    const preview = $('cTalentPreview');
+    preview.src = dataUrl;
+    preview.style.display = 'block';
+    $('cTalentImageActions').style.display = 'flex';
+  });
+}
+
 /* Tombol "Ganti Foto" & "Hapus Foto" generik — biar bisa ganti-ganti gambar
    tanpa perlu refresh halaman sama sekali. */
 function setupImageReplaceControls(opts){
@@ -1412,14 +1581,15 @@ function doLogout(){
 }
 
 /* ---------------------------------------------------------
-   MODE SWITCHER — LP Forge <-> Video Ads
+   MODE SWITCHER — LP Forge <-> Video Ads <-> Image Carousel
 --------------------------------------------------------- */
 function switchMode(mode){
-  const isLP = mode === 'lp';
-  $('modeLP').style.display = isLP ? 'block' : 'none';
-  $('modeVideo').style.display = isLP ? 'none' : 'block';
-  $('tabLP').classList.toggle('active', isLP);
-  $('tabVideo').classList.toggle('active', !isLP);
+  $('modeLP').style.display = mode === 'lp' ? 'block' : 'none';
+  $('modeVideo').style.display = mode === 'video' ? 'block' : 'none';
+  $('modeCarousel').style.display = mode === 'carousel' ? 'block' : 'none';
+  $('tabLP').classList.toggle('active', mode === 'lp');
+  $('tabVideo').classList.toggle('active', mode === 'video');
+  $('tabCarousel').classList.toggle('active', mode === 'carousel');
 }
 
 /* ---------------------------------------------------------
@@ -1433,6 +1603,71 @@ const CREATIVE_FORMAT_DB = [
   'Fake Documentary', 'Reaction', 'Street Interview', 'AI Cinematic',
   'Social Proof', 'Customer Journey', 'Problem Solution', 'Day In My Life', 'Listicle'
 ];
+
+/* ---------------------------------------------------------
+   IMAGE CAROUSEL WIZARD — Meta Ads Creative Motive Engine
+--------------------------------------------------------- */
+const CAROUSEL_FORMAT_DB = [
+  'Before/After Swipe', 'Step-by-Step Tutorial', 'Feature Highlight', 'Product Range/Collection',
+  'Comparison Grid (Kami vs Kompetitor)', 'Social Proof Collection', 'Problem-Solution Sequence',
+  'Unboxing Sequence', 'Ingredient/Spec Breakdown', 'Use-Case Scenarios per Card',
+  'Testimonial Carousel', 'Puzzle/Story Build (swipe to reveal)', 'Infographic Steps',
+  'Bundle/Kit Breakdown', 'Behind The Scenes', 'FAQ Buster', 'Myth vs Fact',
+  'Size/Variant Showcase', 'Timeline/Proses Pembuatan', 'Customer Journey per Card'
+];
+
+const carouselState = {
+  selectedMotive: null,
+  selectedFormat: null,
+  usedHooks: [],
+  usedCtas: []
+};
+
+/* Struktur purpose per card, makin banyak card makin banyak "amunisi psikologis"
+   sebelum CTA — mirip video, tapi jumlahnya dipilih manual (bukan dari durasi). */
+const CAROUSEL_STRUCTURES = {
+  3: ['Hook', 'Solution/Benefit', 'CTA'],
+  4: ['Hook', 'Problem', 'Solution', 'CTA'],
+  5: ['Hook', 'Problem', 'Solution', 'Benefit/Proof', 'CTA'],
+  6: ['Hook', 'Problem', 'Agitate', 'Solution', 'Benefit/Proof', 'CTA'],
+  7: ['Hook', 'Problem', 'Agitate', 'Solution', 'Benefit/Proof', 'Benefit/Proof 2', 'CTA'],
+  8: ['Hook', 'Problem', 'Agitate', 'Solution', 'Benefit/Proof', 'Benefit/Proof 2', 'Social Proof/Testimonial', 'CTA'],
+  9: ['Hook', 'Problem', 'Agitate', 'Solution', 'Benefit/Proof', 'Benefit/Proof 2', 'Social Proof/Testimonial', 'Urgency/Offer', 'CTA'],
+  10: ['Hook', 'Problem', 'Agitate', 'Solution', 'Benefit/Proof', 'Benefit/Proof 2', 'Benefit/Proof 3', 'Social Proof/Testimonial', 'Urgency/Offer', 'CTA']
+};
+
+function getCarouselCardCount(){
+  return Math.max(3, Math.min(10, parseInt($('cJumlahCard').value, 10) || 4));
+}
+
+function getCarouselStructure(){
+  return CAROUSEL_STRUCTURES[getCarouselCardCount()];
+}
+
+function updateCarouselStructureHint(){
+  const structure = getCarouselStructure();
+  const preview = structure.join(' → ');
+  const hintEl = $('carouselStructureHint');
+  if(hintEl) hintEl.textContent = `Struktur: ${preview}`;
+  const subEl = $('generateCarouselSub');
+  if(subEl){
+    const pill = subEl.querySelector('.selected-pill');
+    subEl.textContent = `${structure.length} card: ${preview} — lengkap visual prompt, headline, description, CTA button.`;
+    if(pill) subEl.appendChild(pill);
+  }
+}
+
+function collectCarouselProduct(){
+  return {
+    nama: $('cNama').value.trim(),
+    kategori: $('cKategori').value,
+    deskripsi: $('cDeskripsi').value.trim(),
+    productVisualAnchor: $('cProductVisualAnchor').value.trim(),
+    talentDeskripsi: $('cTalentDeskripsi').value.trim(),
+    ratio: $('cRatio').value,
+    jumlahCard: getCarouselCardCount()
+  };
+}
 
 const videoState = {
   selectedMotive: null,
@@ -1592,6 +1827,67 @@ async function analyzeTalentImage(){
   }
 }
 
+async function autoGenerateCarouselDescription(){
+  const statusEl = $('statusAutoDeskripsiCarousel');
+  const nama = $('cNama').value.trim();
+  const kategori = $('cKategori').value;
+
+  if(!cProductImageBase64){
+    setStatus(statusEl, 'err', 'Upload foto produk dulu di atas biar hasilnya presisi.');
+    return;
+  }
+
+  setStatus(statusEl, 'pending', 'Menganalisa foto produk...');
+
+  const prompt = `Kamu adalah Meta Ads Creative Strategist untuk kategori produk: ${kategori}.
+
+Lihat foto produk ini dengan sangat detail: bentuk fisik, kemasan, warna persis, tekstur, ukuran kira-kira, tulisan/label yang terlihat, dan elemen visual lain.
+
+${nama ? `Nama Produk: ${nama}` : '(nama produk belum diisi, boleh diabaikan)'}
+Kategori: ${kategori}
+
+TUGAS: Balas HANYA dengan satu JSON PERSIS seperti ini, tanpa markdown/backtick/penjelasan tambahan:
+{
+  "deskripsi": "1 paragraf singkat (3-4 kalimat) Bahasa Indonesia: apa produknya, siapa target pembelinya, masalah/kebutuhan apa yang diselesaikan. Gabungkan apa yang terlihat di foto dengan konteks nama/kategori. Jangan mengarang klaim medis/khasiat berlebihan.",
+  "visual_anchor": "1 kalimat padat & sangat spesifik mendeskripsikan tampilan fisik PERSIS produk ini (bentuk kemasan, warna dominan & aksen, material/tekstur, ukuran kira-kira, detail label/tulisan yang terlihat) — kalimat ini akan dipakai berulang kali sebagai acuan visual supaya produk terlihat identik di setiap card carousel, jadi harus detail dan konkret, bukan generik."
+}`;
+
+  try{
+    const raw = await callGemini([
+      { text: prompt },
+      { inline_data: { mime_type: cProductImageMime, data: cProductImageBase64 } }
+    ]);
+    const cleaned = stripJsonFence(raw);
+    const parsed = JSON.parse(cleaned);
+    if(typeof parsed.deskripsi === 'string') $('cDeskripsi').value = parsed.deskripsi.trim();
+    if(typeof parsed.visual_anchor === 'string') $('cProductVisualAnchor').value = parsed.visual_anchor.trim();
+    setStatus(statusEl, 'ok', 'Deskripsi & detail visual produk terisi otomatis — cek & edit sesuai kebutuhan.');
+  }catch(e){
+    setStatus(statusEl, 'err', 'Gagal: ' + e.message);
+  }
+}
+
+async function analyzeCarouselTalentImage(){
+  const statusEl = $('statusTalentCarousel');
+  if(!cTalentImageBase64){
+    setStatus(statusEl, 'err', 'Upload foto talent dulu.');
+    return;
+  }
+  setStatus(statusEl, 'pending', 'Menganalisa foto talent...');
+
+  const prompt = `Lihat foto orang di gambar ini. Tulis deskripsi fisik singkat (1-2 kalimat) dalam Bahasa Indonesia yang berguna sebagai referensi visual talent untuk image carousel ads: perkiraan gender & rentang usia, gaya rambut/pakaian yang terlihat, kesan ekspresi/vibe keseluruhan. Balas HANYA teks deskripsinya, tanpa markdown, tanpa penjelasan tambahan.`;
+
+  try{
+    const out = await callGemini([
+      { text: prompt },
+      { inline_data: { mime_type: cTalentImageMime, data: cTalentImageBase64 } }
+    ]);
+    $('cTalentDeskripsi').value = out.trim().replace(/^"+|"+$/g, '');
+    setStatus(statusEl, 'ok', 'Deskripsi talent terisi — boleh diedit.');
+  }catch(e){
+    setStatus(statusEl, 'err', 'Gagal: ' + e.message);
+  }
+}
 async function analyzeMotives(){
   const statusEl = $('statusMotives');
   const data = collectVideoProduct();
@@ -1713,6 +2009,127 @@ function selectFormat(format, chipEl){
   $('btnCopyVideo').style.display = 'none';
 }
 
+async function analyzeCarouselMotives(){
+  const statusEl = $('statusMotivesCarousel');
+  const data = collectCarouselProduct();
+  if(!data.nama){
+    setStatus(statusEl, 'err', 'Isi Nama Produk dulu.');
+    return;
+  }
+  setStatus(statusEl, 'pending', 'Menganalisa buying motive...');
+  $('motiveChipsCarousel').innerHTML = '';
+
+  const prompt = `Kamu adalah META ADS CREATIVE MOTIVE ENGINE v1.0. Peranmu bukan copywriter, tapi Meta Ads Creative Strategist. Setiap creative harus dibangun dari psikologi pembeli (buying motive) dulu, sebelum ke eksekusi.
+
+PRODUK: ${data.nama}
+KATEGORI: ${data.kategori}
+DESKRIPSI: ${data.deskripsi || '-'}
+
+TUGAS: Tentukan buying motive paling relevan untuk produk ini — alasan psikologis KENAPA orang mau beli (bukan fitur produk). Minimal 8, maksimal 15 motif. Boleh terinspirasi kategori seperti Fear, Desire, Convenience, Financial, Status, Family, Career, Lifestyle, Emotion, Security, Health, Confidence, Social Proof, Urgency, Curiosity — tapi tulis SPESIFIK ke produk ini, bukan generic/template.
+
+WAJIB balas HANYA dengan JSON array of string, tanpa markdown/backtick/penjelasan tambahan. Tiap string maksimal 12 kata. Contoh format:
+["Takut ketinggalan solusi yang orang lain sudah pakai duluan", "Ingin diakui lebih rapi/terawat di depan orang lain", "..."]`;
+
+  try{
+    const raw = await callGemini([{ text: prompt }]);
+    const cleaned = stripJsonFence(raw);
+    const motives = JSON.parse(cleaned);
+    renderMotiveChipsCarousel(motives);
+    setStatus(statusEl, 'ok', `${motives.length} motif ditemukan. Pilih salah satu.`);
+  }catch(e){
+    setStatus(statusEl, 'err', 'Gagal: ' + e.message);
+  }
+}
+
+function renderMotiveChipsCarousel(motives){
+  const container = $('motiveChipsCarousel');
+  container.innerHTML = '';
+  motives.forEach(m => {
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.textContent = m;
+    chip.addEventListener('click', () => selectMotiveCarousel(m, chip));
+    container.appendChild(chip);
+  });
+}
+
+function selectMotiveCarousel(motive, chipEl){
+  carouselState.selectedMotive = motive;
+  carouselState.selectedFormat = null;
+  document.querySelectorAll('#motiveChipsCarousel .chip').forEach(c => c.classList.remove('selected'));
+  chipEl.classList.add('selected');
+
+  $('motiveSelectedPillCarousel').style.display = 'inline-block';
+  $('motiveSelectedPillCarousel').textContent = motive;
+  $('formatSectionCarousel').classList.add('active');
+  $('formatChipsCarousel').innerHTML = '';
+  $('formatSelectedPillCarousel').style.display = 'none';
+  $('generateCarouselSection').classList.remove('active');
+  $('carouselOutputRaw').classList.remove('show');
+  $('carouselOutputBlocks').innerHTML = '';
+  $('btnRegenerateCarousel').style.display = 'none';
+  $('btnCopyCarousel').style.display = 'none';
+}
+
+async function analyzeCarouselFormats(){
+  const statusEl = $('statusFormatsCarousel');
+  if(!carouselState.selectedMotive){
+    setStatus(statusEl, 'err', 'Pilih motif dulu di atas.');
+    return;
+  }
+  const data = collectCarouselProduct();
+  setStatus(statusEl, 'pending', 'Menganalisa format creative...');
+  $('formatChipsCarousel').innerHTML = '';
+
+  const prompt = `Kamu adalah META ADS CREATIVE MOTIVE ENGINE v1.0, khusus format Image Carousel (bukan video).
+
+PRODUK: ${data.nama} (${data.kategori})
+MOTIF TERPILIH: ${carouselState.selectedMotive}
+
+DATABASE FORMAT CAROUSEL (pilih HANYA dari daftar ini, tulis nama persis):
+${CAROUSEL_FORMAT_DB.join(', ')}
+
+TUGAS: Pilih 6-12 format dari database di atas yang PALING COCOK untuk mengeksekusi motif tersebut untuk produk ini lewat Meta Ads Image Carousel. Jangan asal pilih semua — hanya yang benar-benar relevan.
+
+WAJIB balas HANYA dengan JSON array of string (nama format persis dari daftar), tanpa markdown/penjelasan tambahan.`;
+
+  try{
+    const raw = await callGemini([{ text: prompt }]);
+    const cleaned = stripJsonFence(raw);
+    const formats = JSON.parse(cleaned);
+    renderFormatChipsCarousel(formats);
+    setStatus(statusEl, 'ok', `${formats.length} format ditemukan. Pilih salah satu.`);
+  }catch(e){
+    setStatus(statusEl, 'err', 'Gagal: ' + e.message);
+  }
+}
+
+function renderFormatChipsCarousel(formats){
+  const container = $('formatChipsCarousel');
+  container.innerHTML = '';
+  formats.forEach(f => {
+    const chip = document.createElement('button');
+    chip.className = 'chip';
+    chip.textContent = f;
+    chip.addEventListener('click', () => selectFormatCarousel(f, chip));
+    container.appendChild(chip);
+  });
+}
+
+function selectFormatCarousel(format, chipEl){
+  carouselState.selectedFormat = format;
+  document.querySelectorAll('#formatChipsCarousel .chip').forEach(c => c.classList.remove('selected'));
+  chipEl.classList.add('selected');
+
+  $('formatSelectedPillCarousel').style.display = 'inline-block';
+  $('formatSelectedPillCarousel').textContent = format;
+  $('generateCarouselSection').classList.add('active');
+  $('carouselOutputRaw').classList.remove('show');
+  $('carouselOutputBlocks').innerHTML = '';
+  $('btnRegenerateCarousel').style.display = 'none';
+  $('btnCopyCarousel').style.display = 'none';
+}
+
 /* Panduan singkat per purpose, dipakai buat nge-brief AI supaya tiap purpose
    punya arahan jelas biarpun jumlah scene-nya berubah-ubah. */
 const SCENE_PURPOSE_GUIDE = {
@@ -1725,6 +2142,20 @@ const SCENE_PURPOSE_GUIDE = {
   'Social Proof/Testimonial': 'tunjukkan validasi dari orang lain (kutipan/reaksi testimoni singkat, gaya UGC) untuk memperkuat kepercayaan sebelum closing.',
   'Urgency/Offer': 'tekankan urgensi/penawaran (stok terbatas, promo, dsb) secara jujur — bukan fake urgency — untuk mendorong keputusan sebelum CTA final.',
   'CTA': 'closing yang jelas dan kuat tapi tetap soft, dorong satu aksi konkret.'
+};
+
+/* Panduan per purpose khusus card carousel (gambar statis, bukan video). */
+const CARD_PURPOSE_GUIDE = {
+  'Hook': 'card pertama yang dilihat sebelum orang swipe — harus scroll-stopping dalam 1 gambar + 1 headline pendek. Pattern interrupt, curiosity tinggi. JANGAN perkenalkan produk penuh dulu.',
+  'Problem': 'tunjukkan pain/masalah yang relate ke target audiens secara visual, headline nyentil masalahnya.',
+  'Agitate': 'perbesar konsekuensi/urgensi dari masalah di card sebelumnya lewat visual & headline yang lebih tajam, sebelum solusi muncul di card berikutnya.',
+  'Solution': 'perkenalkan produk sebagai jawaban, tunjukkan produk secara jelas di visual.',
+  'Solution/Benefit': 'perkenalkan produk sekaligus benefit utamanya dalam satu card (karena carousel-nya pendek).',
+  'Benefit/Proof': 'highlight satu benefit/fitur konkret produk secara visual (mis. before/after, hasil, data singkat).',
+  'Benefit/Proof 2': 'highlight benefit/fitur BERBEDA dari card benefit sebelumnya — jangan mengulang benefit yang sama.',
+  'Social Proof/Testimonial': 'tunjukkan validasi dari orang lain (kutipan testimoni singkat, rating, gaya UGC).',
+  'Urgency/Offer': 'tekankan urgensi/penawaran secara jujur (stok terbatas, promo, dsb) — bukan fake urgency.',
+  'CTA': 'card penutup, closing jelas & kuat, visual mendukung satu aksi konkret (klik/swipe/beli).'
 };
 
 function buildVideoCreativePrompt(){
@@ -2010,6 +2441,260 @@ function resetVideoWizard(){
   clearStatus($('statusVideo'));
 }
 
+/* CTA button standar Meta Ads — AI diminta pilih dari daftar ini, bukan mengarang sendiri. */
+const META_CTA_BUTTONS = [
+  'Shop Now', 'Learn More', 'Sign Up', 'Download', 'Get Offer', 'Contact Us',
+  'Book Now', 'Get Quote', 'Subscribe', 'Watch More', 'Apply Now', 'Send Message'
+];
+
+function buildCarouselCreativePrompt(){
+  const data = collectCarouselProduct();
+  const structure = getCarouselStructure();
+  const avoidHooks = carouselState.usedHooks.length
+    ? `HEADLINE HOOK YANG SUDAH PERNAH DIPAKAI DI GENERATE SEBELUMNYA (JANGAN DIULANG, buat yang beda): ${JSON.stringify(carouselState.usedHooks)}`
+    : '';
+  const avoidCtas = carouselState.usedCtas.length
+    ? `HEADLINE CTA YANG SUDAH PERNAH DIPAKAI (JANGAN DIULANG): ${JSON.stringify(carouselState.usedCtas)}`
+    : '';
+
+  const structureLines = structure
+    .map((purpose, i) => `Card ${i + 1} — ${purpose.toUpperCase()}: ${CARD_PURPOSE_GUIDE[purpose] || ''}`)
+    .join('\n');
+
+  const productAnchor = data.productVisualAnchor || data.deskripsi || data.nama || '-';
+  const talentAnchor = data.talentDeskripsi || '';
+
+  const cardSchema = structure
+    .map((purpose, i) => `  "card_${i + 1}": {
+    "card": ${i + 1},
+    "purpose": "${purpose}",
+    "headline": "",
+    "description": "",
+    "visual_prompt": {
+      "environment": "",
+      "subject": "",
+      "composition": "",
+      "lighting": "",
+      "camera_angle": "",
+      "depth_of_field": "",
+      "quality": "Ultra realistic 8K",
+      "aspect_ratio": "${data.ratio}"
+    },
+    "overlay_design": {
+      "badge": { "text": "", "background": "Auto", "text_color": "Auto" },
+      "headline_style": { "font": "Bold Sans", "weight": "900" },
+      "keyword": { "text": "", "color": "Auto", "gradient": true, "glow": true },
+      "background_panel": { "type": "premium_glow", "opacity": 65 },
+      "stroke": true,
+      "shadow": true,
+      "accent": { "type": "underline_glow", "color": "Auto" },
+      "position": "Center"
+    },
+    "suggested_cta_button": "",
+    "negative_prompt": ""
+  }`)
+    .join(',\n');
+
+  return `SYSTEM ROLE
+Kamu adalah META ADS CREATIVE MOTIVE ENGINE v1.0. Peranmu adalah Meta Ads Creative Strategist + AI image prompt engineer, bukan copywriter biasa. Creative harus dibangun dari buying motive, bukan asal script, dan visual_prompt kamu akan dipakai LANGSUNG sebagai prompt ke AI image generator — jadi harus fotografis, spesifik, dan detail, BUKAN generik. Ini format IMAGE CAROUSEL Meta Ads (rangkaian gambar statis yang di-swipe), BUKAN video.
+
+KONTEKS YANG SUDAH DITENTUKAN (jangan diubah, jangan tanya ulang):
+Produk: ${data.nama}
+Kategori: ${data.kategori}
+Deskripsi: ${data.deskripsi || '-'}
+Buying Motive Terpilih: ${carouselState.selectedMotive}
+Creative Format Terpilih: ${carouselState.selectedFormat}
+
+VISUAL ANCHOR PRODUK (WAJIB, PALING PENTING UNTUK KONSISTENSI):
+"${productAnchor}"
+Kalimat ini adalah tampilan FISIK PERSIS produk (kemasan, warna, bentuk, label). Di SETIAP card yang menampilkan produk, field "visual_prompt.subject" WAJIB memuat deskripsi produk yang IDENTIK dengan anchor ini (boleh disusun ulang jadi kalimat natural, tapi detail warna/kemasan/bentuk/label TIDAK BOLEH berubah antar card). Orang men-swipe carousel dengan cepat — kalau produk kelihatan beda tiap card, itu langsung terasa aneh/tidak profesional.
+
+VISUAL ANCHOR TALENT (kalau ada):
+${talentAnchor ? `"${talentAnchor}"
+Deskripsi fisik & wardrobe talent ini WAJIB identik di SETIAP card yang menampilkan talent tersebut (rambut, warna & model baju, aksesoris) — JANGAN variasikan/ganti kostum antar card.` : 'Tidak ada talent spesifik ditentukan — boleh pakai product shot murni / flat lay / lifestyle shot tanpa orang, sesuaikan dengan format creative yang dipilih. Kalau kamu memutuskan pakai talent generik, JAGA konsistensi tampilan talent itu di semua card yang menampilkannya.'}
+
+TUGAS: Buat SATU creative concept carousel kuat, mengeksekusi motif & format di atas, dengan struktur ${structure.length} card berikut (jangan tambah/kurangi jumlah card, ikuti persis urutan ini — carousel akan di-swipe berurutan dari card 1):
+${structureLines}
+
+Catatan pacing: makin banyak jumlah card, makin banyak "amunisi psikologis" yang perlu digali sebelum CTA (bukan cuma pengulangan pesan yang sama) — tiap card harus punya kontribusi psikologis yang jelas dan berbeda dari card lain, dan tetap enak di-swipe berurutan sebagai satu cerita utuh.
+
+ATURAN VISUAL (WAJIB SPESIFIK, JANGAN GENERIK): visual_prompt harus fotografis & konkret — tentukan composition (mis. "flat lay dari atas, produk center frame", "close-up detail tekstur", "lifestyle shot produk dipegang tangan"), lighting (mis. "soft natural daylight dari kiri", "studio lighting clean e-commerce style"), camera_angle (mis. "eye-level straight-on", "45 derajat dari atas", "macro close-up"), depth_of_field (mis. "shallow DOF, background blur lembut"). Tiap card boleh beda angle/komposisi asal produk tetap konsisten sesuai anchor.
+
+ATURAN HEADLINE & DESCRIPTION: "headline" adalah judul pendek per card (MAKSIMAL 5-6 kata / ~40 karakter, ini standar Meta Carousel — headline yang kepanjangan akan terpotong di feed). "description" adalah teks sekunder pendek (opsional, maksimal ~20 karakter, atau string kosong kalau tidak perlu). Card pertama (Hook) headline-nya harus scroll-stopping. Card terakhir (CTA) headline-nya harus closing yang jelas.
+
+ATURAN SUGGESTED_CTA_BUTTON: pilih SATU dari daftar CTA button resmi Meta ini (tulis persis, jangan mengarang sendiri): ${META_CTA_BUTTONS.join(', ')}. Boleh sama di semua card atau beda-beda kalau relevan, tapi card terakhir (CTA) WAJIB diisi dengan pilihan yang paling actionable.
+
+Field "negative_prompt" boleh dikosongkan string kosong saja (akan diisi otomatis oleh sistem, bukan tugasmu).
+
+${avoidHooks}
+${avoidCtas}
+
+OUTPUT FORMAT: Balas HANYA dengan SATU JSON, tanpa markdown, tanpa backtick, tanpa penjelasan/catatan tambahan. Ikuti struktur PERSIS ini, isi semua field (jangan ada yang kosong kecuali disebutkan boleh kosong di atas):
+{
+  "creative_strategy": {
+    "product": "${data.nama}",
+    "selected_motive": "${carouselState.selectedMotive}",
+    "selected_format": "${carouselState.selectedFormat}",
+    "target_emotion": "",
+    "primary_angle": ""
+  },
+  "carousel": {
+    "ratio": "${data.ratio}",
+    "total_card": ${structure.length}
+  },
+${cardSchema}
+}
+
+PRIORITASKAN scroll/swipe-stopping creative dibanding visual yang cuma estetik. Optimalkan untuk CTR, Swipe Rate, dan Conversion Rate.`;
+}
+
+function renderCarouselOutputBlocks(parsed){
+  const container = $('carouselOutputBlocks');
+  container.innerHTML = '';
+
+  container.appendChild(buildVideoBlockCard('Strategy & Carousel Meta', {
+    creative_strategy: parsed.creative_strategy,
+    carousel: parsed.carousel
+  }));
+
+  if(parsed.visual_anchor){
+    container.appendChild(buildVideoBlockCard('Visual Anchor (Konsistensi Produk & Talent)', {
+      visual_anchor: parsed.visual_anchor
+    }));
+  }
+
+  const contextFields = {
+    product: parsed.creative_strategy && parsed.creative_strategy.product,
+    ratio: parsed.carousel && parsed.carousel.ratio,
+    total_card: parsed.carousel && parsed.carousel.total_card,
+    visual_anchor: parsed.visual_anchor
+  };
+
+  const cardKeys = Object.keys(parsed)
+    .filter(k => /^card_\d+$/.test(k))
+    .sort((a, b) => parseInt(a.split('_')[1], 10) - parseInt(b.split('_')[1], 10));
+
+  cardKeys.forEach(key => {
+    const num = key.split('_')[1];
+    const purpose = parsed[key] && parsed[key].purpose ? parsed[key].purpose : '';
+    const title = `Card ${num}${purpose ? ' — ' + purpose : ''}`;
+    const cardObj = Object.assign({ card_number: parseInt(num, 10) }, contextFields, { [key]: parsed[key] });
+    container.appendChild(buildVideoBlockCard(title, cardObj));
+  });
+}
+
+/* Sama seperti video: field kritikal dipaksa deterministik dari sistem
+   (card index & purpose & negative_prompt & anchor produk/talent di visual_prompt.subject). */
+function enforceCarouselConsistency(parsed, data, structure){
+  const productAnchor = data.productVisualAnchor || data.deskripsi || data.nama || '';
+  const talentAnchor = data.talentDeskripsi || '';
+  const anchorPrefix = [productAnchor, talentAnchor].filter(Boolean).join('. ');
+
+  structure.forEach((purpose, i) => {
+    const key = `card_${i + 1}`;
+    const card = parsed[key];
+    if(!card) return;
+
+    card.card = i + 1;
+    card.purpose = purpose;
+    card.negative_prompt = buildNegativePrompt(data);
+
+    if(card.visual_prompt){
+      card.visual_prompt.aspect_ratio = data.ratio;
+      if(!card.visual_prompt.quality) card.visual_prompt.quality = 'Ultra realistic 8K';
+      const existingSubject = (card.visual_prompt.subject || '').trim();
+      if(anchorPrefix){
+        card.visual_prompt.subject = existingSubject
+          ? `${anchorPrefix}. ${existingSubject}`
+          : anchorPrefix;
+      }
+    }
+  });
+
+  parsed.visual_anchor = {
+    product_appearance: productAnchor || '-',
+    talent_appearance: talentAnchor || '-'
+  };
+
+  return parsed;
+}
+
+async function generateCarouselCreative(){
+  const statusEl = $('statusCarousel');
+  if(!carouselState.selectedMotive || !carouselState.selectedFormat){
+    setStatus(statusEl, 'err', 'Pilih motif dan format dulu.');
+    return;
+  }
+  setStatus(statusEl, 'pending', 'Generating carousel JSON...');
+  const rawEl = $('carouselOutputRaw');
+  const blocksEl = $('carouselOutputBlocks');
+  rawEl.classList.remove('show');
+  rawEl.textContent = '';
+  blocksEl.innerHTML = '';
+
+  try{
+    const data = collectCarouselProduct();
+    const structure = getCarouselStructure();
+    const prompt = buildCarouselCreativePrompt();
+    const raw = await callGemini([{ text: prompt }]);
+    const cleaned = stripJsonFence(raw);
+    let parsed, pretty;
+    try{
+      parsed = JSON.parse(cleaned);
+      parsed = enforceCarouselConsistency(parsed, data, structure);
+      pretty = JSON.stringify(parsed, null, 2);
+    }catch(_){
+      pretty = cleaned;
+      parsed = null;
+    }
+
+    rawEl.dataset.raw = pretty;
+    if(parsed){
+      renderCarouselOutputBlocks(parsed);
+    }else{
+      rawEl.textContent = pretty;
+      rawEl.classList.add('show');
+    }
+
+    if(parsed){
+      const totalCard = structure.length;
+      const firstCard = parsed.card_1;
+      const lastCard = parsed[`card_${totalCard}`];
+      const hook = firstCard && firstCard.headline;
+      const cta = lastCard && lastCard.headline;
+      if(hook) carouselState.usedHooks.push(hook);
+      if(cta) carouselState.usedCtas.push(cta);
+    }
+
+    $('btnRegenerateCarousel').style.display = 'inline-block';
+    $('btnCopyCarousel').style.display = 'inline-block';
+    setStatus(statusEl, 'ok', 'Selesai. Tiap card bisa di-copy sendiri-sendiri di bawah. Mau variasi lain? Klik "Generate Variasi Baru".');
+  }catch(e){
+    setStatus(statusEl, 'err', 'Gagal: ' + e.message);
+  }
+}
+
+function resetCarouselWizard(){
+  carouselState.selectedMotive = null;
+  carouselState.selectedFormat = null;
+  carouselState.usedHooks = [];
+  carouselState.usedCtas = [];
+  $('motiveChipsCarousel').innerHTML = '';
+  $('formatChipsCarousel').innerHTML = '';
+  $('motiveSelectedPillCarousel').style.display = 'none';
+  $('formatSelectedPillCarousel').style.display = 'none';
+  $('formatSectionCarousel').classList.remove('active');
+  $('generateCarouselSection').classList.remove('active');
+  $('carouselOutputRaw').classList.remove('show');
+  $('carouselOutputRaw').textContent = '';
+  $('carouselOutputBlocks').innerHTML = '';
+  $('btnRegenerateCarousel').style.display = 'none';
+  $('btnCopyCarousel').style.display = 'none';
+  clearStatus($('statusMotivesCarousel'));
+  clearStatus($('statusFormatsCarousel'));
+  clearStatus($('statusCarousel'));
+}
+
 /* ---------------------------------------------------------
    ADMIN PANEL — kelola user lewat /api/users
 --------------------------------------------------------- */
@@ -2134,6 +2819,7 @@ function initTool(){
 
   $('tabLP').addEventListener('click', () => switchMode('lp'));
   $('tabVideo').addEventListener('click', () => switchMode('video'));
+  $('tabCarousel').addEventListener('click', () => switchMode('carousel'));
 
   setupImageReplaceControls({
     inputId: 'refImage', previewId: 'refPreview', actionsId: 'refImageActions',
@@ -2149,6 +2835,16 @@ function initTool(){
     inputId: 'vTalentImage', previewId: 'vTalentPreview', actionsId: 'vTalentImageActions',
     changeBtnId: 'btnChangeTalentImage', clearBtnId: 'btnClearTalentImage',
     onClear: () => { vTalentImageBase64 = null; vTalentImageMime = null; }
+  });
+  setupImageReplaceControls({
+    inputId: 'cProductImage', previewId: 'cProductPreview', actionsId: 'cProductImageActions',
+    changeBtnId: 'btnChangeProductImageC', clearBtnId: 'btnClearProductImageC',
+    onClear: () => { cProductImageBase64 = null; cProductImageMime = null; }
+  });
+  setupImageReplaceControls({
+    inputId: 'cTalentImage', previewId: 'cTalentPreview', actionsId: 'cTalentImageActions',
+    changeBtnId: 'btnChangeTalentImageC', clearBtnId: 'btnClearTalentImageC',
+    onClear: () => { cTalentImageBase64 = null; cTalentImageMime = null; }
   });
 
   $('vProductImage').addEventListener('change', handleVideoProductImageUpload);
@@ -2167,6 +2863,23 @@ function initTool(){
     if(!text){ toast('Belum ada hasil untuk di-copy'); return; }
     copyText(text);
   });
+
+  $('cProductImage').addEventListener('change', handleCarouselProductImageUpload);
+  $('btnAutoDeskripsiCarousel').addEventListener('click', autoGenerateCarouselDescription);
+  $('cTalentImage').addEventListener('change', handleCarouselTalentImageUpload);
+  $('btnAnalyzeTalentCarousel').addEventListener('click', analyzeCarouselTalentImage);
+  $('cJumlahCard').addEventListener('change', updateCarouselStructureHint);
+  $('btnAnalyzeMotivesCarousel').addEventListener('click', analyzeCarouselMotives);
+  $('btnAnalyzeFormatsCarousel').addEventListener('click', analyzeCarouselFormats);
+  $('btnGenerateCarousel').addEventListener('click', generateCarouselCreative);
+  $('btnRegenerateCarousel').addEventListener('click', generateCarouselCreative);
+  $('btnResetWizardCarousel').addEventListener('click', resetCarouselWizard);
+  $('btnCopyCarousel').addEventListener('click', () => {
+    const text = $('carouselOutputRaw').dataset.raw;
+    if(!text){ toast('Belum ada hasil untuk di-copy'); return; }
+    copyText(text);
+  });
+  updateCarouselStructureHint();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
