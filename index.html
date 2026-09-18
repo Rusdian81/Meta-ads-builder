@@ -2290,6 +2290,28 @@ function buildVideoBlockCard(title, obj){
   return card;
 }
 
+/* Baris tombol copy cepat buat field teks tertentu (headline/description/caption/VO)
+   TANPA perlu ambil dari dalam JSON — biar nggak perlu cari manual. */
+function buildQuickCopyRow(fields){
+  const usable = fields.filter(f => f.value);
+  if(!usable.length) return null;
+
+  const row = document.createElement('div');
+  row.className = 'row-actions';
+  row.style.cssText = 'margin-bottom:10px; padding-bottom:10px; border-bottom:1px dashed var(--line);';
+
+  usable.forEach(f => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'secondary small';
+    btn.textContent = `Copy ${f.label}`;
+    btn.addEventListener('click', () => copyText(f.value));
+    row.appendChild(btn);
+  });
+
+  return row;
+}
+
 function renderVideoOutputBlocks(parsed){
   const container = $('videoOutputBlocks');
   container.innerHTML = '';
@@ -2319,10 +2341,23 @@ function renderVideoOutputBlocks(parsed){
 
   sceneKeys.forEach(key => {
     const num = key.split('_')[1];
-    const purpose = parsed[key] && parsed[key].purpose ? parsed[key].purpose : '';
+    const sceneData = parsed[key];
+    const purpose = sceneData && sceneData.purpose ? sceneData.purpose : '';
     const title = `Scene ${num}${purpose ? ' — ' + purpose : ''}`;
-    const sceneObj = Object.assign({ scene_number: parseInt(num, 10) }, contextFields, { [key]: parsed[key] });
-    container.appendChild(buildVideoBlockCard(title, sceneObj));
+    const sceneObj = Object.assign({ scene_number: parseInt(num, 10) }, contextFields, { [key]: sceneData });
+    const sceneEl = buildVideoBlockCard(title, sceneObj);
+
+    const quickRow = buildQuickCopyRow([
+      { label: 'Headline', value: sceneData && sceneData.overlay_design && sceneData.overlay_design.headline && sceneData.overlay_design.headline.text },
+      { label: 'Caption', value: sceneData && sceneData.caption },
+      { label: 'Voice Over', value: sceneData && sceneData.voice_over_script }
+    ]);
+    if(quickRow){
+      const body = sceneEl.querySelector('.sc-body');
+      body.insertBefore(quickRow, body.firstChild);
+    }
+
+    container.appendChild(sceneEl);
   });
 }
 
@@ -2569,9 +2604,17 @@ function renderCarouselOutputBlocks(parsed){
   }));
 
   if(parsed.ad_copy){
-    container.appendChild(buildVideoBlockCard('Primary Text (teks di atas carousel)', {
+    const adCopyEl = buildVideoBlockCard('Primary Text (teks di atas carousel)', {
       ad_copy: parsed.ad_copy
-    }));
+    });
+    const quickRow = buildQuickCopyRow([
+      { label: 'Primary Text', value: parsed.ad_copy.primary_text }
+    ]);
+    if(quickRow){
+      const body = adCopyEl.querySelector('.sc-body');
+      body.insertBefore(quickRow, body.firstChild);
+    }
+    container.appendChild(adCopyEl);
   }
 
   if(parsed.visual_anchor){
@@ -2594,10 +2637,22 @@ function renderCarouselOutputBlocks(parsed){
 
   cardKeys.forEach(key => {
     const num = key.split('_')[1];
-    const purpose = parsed[key] && parsed[key].purpose ? parsed[key].purpose : '';
+    const cardData = parsed[key];
+    const purpose = cardData && cardData.purpose ? cardData.purpose : '';
     const title = `Card ${num}${purpose ? ' — ' + purpose : ''}`;
-    const cardObj = Object.assign({ card_number: parseInt(num, 10) }, contextFields, { [key]: parsed[key] });
-    container.appendChild(buildVideoBlockCard(title, cardObj));
+    const cardObj = Object.assign({ card_number: parseInt(num, 10) }, contextFields, { [key]: cardData });
+    const cardEl = buildVideoBlockCard(title, cardObj);
+
+    const quickRow = buildQuickCopyRow([
+      { label: 'Headline', value: cardData && cardData.headline },
+      { label: 'Description', value: cardData && cardData.description }
+    ]);
+    if(quickRow){
+      const body = cardEl.querySelector('.sc-body');
+      body.insertBefore(quickRow, body.firstChild);
+    }
+
+    container.appendChild(cardEl);
   });
 }
 
