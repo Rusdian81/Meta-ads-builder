@@ -1620,7 +1620,8 @@ const carouselState = {
   selectedMotive: null,
   selectedFormat: null,
   usedHooks: [],
-  usedCtas: []
+  usedCtas: [],
+  usedPrimaryTexts: []
 };
 
 /* Struktur purpose per card, makin banyak card makin banyak "amunisi psikologis"
@@ -2456,6 +2457,9 @@ function buildCarouselCreativePrompt(){
   const avoidCtas = carouselState.usedCtas.length
     ? `HEADLINE CTA YANG SUDAH PERNAH DIPAKAI (JANGAN DIULANG): ${JSON.stringify(carouselState.usedCtas)}`
     : '';
+  const avoidPrimaryTexts = carouselState.usedPrimaryTexts.length
+    ? `PRIMARY TEXT YANG SUDAH PERNAH DIPAKAI DI GENERATE SEBELUMNYA (JANGAN DIULANG, buat sudut pandang/opening baru): ${JSON.stringify(carouselState.usedPrimaryTexts)}`
+    : '';
 
   const structureLines = structure
     .map((purpose, i) => `Card ${i + 1} — ${purpose.toUpperCase()}: ${CARD_PURPOSE_GUIDE[purpose] || ''}`)
@@ -2524,6 +2528,10 @@ ATURAN HEADLINE & DESCRIPTION: "headline" adalah judul pendek per card (MAKSIMAL
 
 ATURAN SUGGESTED_CTA_BUTTON: pilih SATU dari daftar CTA button resmi Meta ini (tulis persis, jangan mengarang sendiri): ${META_CTA_BUTTONS.join(', ')}. Boleh sama di semua card atau beda-beda kalau relevan, tapi card terakhir (CTA) WAJIB diisi dengan pilihan yang paling actionable.
 
+ATURAN PRIMARY TEXT (ad_copy.primary_text): ini adalah teks utama iklan yang tampil DI ATAS carousel di feed Meta (beda dari headline per card) — tugasnya bikin orang berhenti scroll & mau swipe carousel-nya. Tulis dalam Bahasa Indonesia natural/conversational sesuai motif & format yang dipilih, dengan struktur: (1) kalimat pembuka yang nyantol/relate ke masalah atau motif si pembaca dalam 1-2 baris pertama (ini yang paling penting karena Meta memotong tampilan setelah ~125 karakter sebelum "Lihat Selengkapnya"), (2) 2-4 baris isi yang memperkuat value/benefit produk mengalir natural (boleh pakai line break antar poin, JANGAN pakai bullet point kaku ala listicle kecuali formatnya memang listicle), (3) closing soft CTA yang mengarahkan buat swipe carousel-nya (mis. "Geser buat lihat semuanya →", "Swipe biar makin paham ↓"). JANGAN pakai klaim medis berlebihan, JANGAN emoji berlebihan (maksimal beberapa emoji relevan kalau memang natural buat brand voice-nya, boleh nol emoji sama sekali kalau lebih pas).
+
+${avoidPrimaryTexts}
+
 Field "negative_prompt" boleh dikosongkan string kosong saja (akan diisi otomatis oleh sistem, bukan tugasmu).
 
 ${avoidHooks}
@@ -2537,6 +2545,9 @@ OUTPUT FORMAT: Balas HANYA dengan SATU JSON, tanpa markdown, tanpa backtick, tan
     "selected_format": "${carouselState.selectedFormat}",
     "target_emotion": "",
     "primary_angle": ""
+  },
+  "ad_copy": {
+    "primary_text": ""
   },
   "carousel": {
     "ratio": "${data.ratio}",
@@ -2557,6 +2568,12 @@ function renderCarouselOutputBlocks(parsed){
     carousel: parsed.carousel
   }));
 
+  if(parsed.ad_copy){
+    container.appendChild(buildVideoBlockCard('Primary Text (teks di atas carousel)', {
+      ad_copy: parsed.ad_copy
+    }));
+  }
+
   if(parsed.visual_anchor){
     container.appendChild(buildVideoBlockCard('Visual Anchor (Konsistensi Produk & Talent)', {
       visual_anchor: parsed.visual_anchor
@@ -2565,6 +2582,7 @@ function renderCarouselOutputBlocks(parsed){
 
   const contextFields = {
     product: parsed.creative_strategy && parsed.creative_strategy.product,
+    primary_text: parsed.ad_copy && parsed.ad_copy.primary_text,
     ratio: parsed.carousel && parsed.carousel.ratio,
     total_card: parsed.carousel && parsed.carousel.total_card,
     visual_anchor: parsed.visual_anchor
@@ -2662,8 +2680,10 @@ async function generateCarouselCreative(){
       const lastCard = parsed[`card_${totalCard}`];
       const hook = firstCard && firstCard.headline;
       const cta = lastCard && lastCard.headline;
+      const primaryText = parsed.ad_copy && parsed.ad_copy.primary_text;
       if(hook) carouselState.usedHooks.push(hook);
       if(cta) carouselState.usedCtas.push(cta);
+      if(primaryText) carouselState.usedPrimaryTexts.push(primaryText);
     }
 
     $('btnRegenerateCarousel').style.display = 'inline-block';
@@ -2679,6 +2699,7 @@ function resetCarouselWizard(){
   carouselState.selectedFormat = null;
   carouselState.usedHooks = [];
   carouselState.usedCtas = [];
+  carouselState.usedPrimaryTexts = [];
   $('motiveChipsCarousel').innerHTML = '';
   $('formatChipsCarousel').innerHTML = '';
   $('motiveSelectedPillCarousel').style.display = 'none';
