@@ -461,17 +461,20 @@
   <section class="block">
     <div class="block-head"><span class="num">01</span><div><h2>Koneksi Gemini</h2><div class="sub">Dipakai untuk analisa gambar (vision) dan generate JSON per section (text).</div></div></div>
     <div class="block-body">
-      <div class="grid2">
-        <div class="field">
-          <label for="apiKey">Gemini API Key</label>
-          <input type="password" id="apiKey" placeholder="AIza...">
-          <div class="hint">Disimpan hanya di memori tab ini selama halaman terbuka. Refresh = hilang.</div>
+      <div class="field">
+        <label>Gemini API Key</label>
+        <div class="row-actions">
+          <input type="password" id="newApiKeyInput" placeholder="AIza..." style="flex:2; min-width:200px;">
+          <input type="text" id="newApiKeyLabel" placeholder="Label (opsional, mis. Akun 1)" style="flex:1; min-width:140px;">
+          <button type="button" class="secondary small" id="btnAddApiKey">Tambah Key</button>
         </div>
-        <div class="field">
-          <label for="modelName">Model</label>
-          <input type="text" id="modelName" value="gemini-3.5-flash">
-          <div class="hint">Ganti kalau model ini sudah deprecated/diganti Google. Model harus mendukung input gambar.</div>
-        </div>
+        <div id="apiKeyList" style="margin-top:10px;"></div>
+        <div class="hint">Bisa nambah lebih dari 1 API key. Tersimpan otomatis di browser ini (localStorage) — nggak perlu isi ulang tiap buka halaman. Kalau satu key kena error "high demand"/limit, sistem otomatis coba ulang & pindah ke key lain secara bergantian.</div>
+      </div>
+      <div class="field">
+        <label for="modelName">Model</label>
+        <input type="text" id="modelName" value="gemini-3.5-flash">
+        <div class="hint">Ganti kalau model ini sudah deprecated/diganti Google. Model harus mendukung input gambar. Tersimpan otomatis juga.</div>
       </div>
       <div class="row-actions">
         <button class="secondary small" id="btnTest">Tes Koneksi</button>
@@ -1093,14 +1096,121 @@ function collectProductData(){
 }
 
 /* ---------------------------------------------------------
-   GEMINI CALLS
+   API KEY STORAGE — bisa lebih dari 1 key, persist di localStorage
 --------------------------------------------------------- */
-async function callGemini(parts){
-  const apiKey = $('apiKey').value.trim();
-  const model = $('modelName').value.trim();
-  if(!apiKey) throw new Error('API key belum diisi.');
-  if(!model) throw new Error('Nama model belum diisi.');
+const API_KEYS_STORAGE_KEY = 'lpforge_gemini_api_keys_v1';
+const MODEL_STORAGE_KEY = 'lpforge_gemini_model_v1';
+let apiKeyRotateIndex = 0;
 
+function loadApiKeys(){
+  try{
+    const raw = localStorage.getItem(API_KEYS_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  }catch(e){
+    return [];
+  }
+}
+
+function saveApiKeys(keys){
+  try{
+    localStorage.setItem(API_KEYS_STORAGE_KEY, JSON.stringify(keys));
+  }catch(e){
+    // localStorage bisa gagal (mis. mode private/incognito penuh) — diamkan, key tetap kepakai di sesi ini
+  }
+}
+
+function maskApiKey(key){
+  if(!key || key.length <= 10) return key || '';
+  return key.slice(0, 6) + '••••' + key.slice(-4);
+}
+
+function renderApiKeyList(){
+  const container = $('apiKeyList');
+  const keys = loadApiKeys();
+  container.innerHTML = '';
+
+  if(!keys.length){
+    const empty = document.createElement('div');
+    empty.className = 'hint';
+    empty.textContent = 'Belum ada API key tersimpan. Tambahkan minimal 1 di atas.';
+    container.appendChild(empty);
+    return;
+  }
+
+  keys.forEach((k, idx) => {
+    const row = document.createElement('div');
+    row.className = 'row-actions';
+    row.style.cssText = 'justify-content:space-between; padding:8px 10px; background:var(--bg-inset); border:1px solid var(--line); border-radius:4px; margin-bottom:6px; flex-wrap:nowrap;';
+    const label = document.createElement('span');
+    label.className = 'mono';
+    label.style.cssText = 'font-size:12.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
+    label.textContent = `${k.label || `Key ${idx + 1}`} — ${maskApiKey(k.key)}`;
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'secondary small';
+    removeBtn.textContent = 'Hapus';
+    removeBtn.addEventListener('click', () => {
+      const current = loadApiKeys();
+      current.splice(idx, 1);
+      saveApiKeys(current);
+      renderApiKeyList();
+    });
+    row.appendChild(label);
+    row.appendChild(removeBtn);
+    container.appendChild(row);
+  });
+}
+
+function addApiKey(){
+  const keyInput = $('newApiKeyInput');
+  const labelInput = $('newApiKeyLabel');
+  const value = keyInput.value.trim();
+  if(!value){
+    toast('Isi API key dulu sebelum ditambahkan.');
+    return;
+  }
+  const keys = loadApiKeys();
+  keys.push({ key: value, label: labelInput.value.trim() || `Key ${keys.length + 1}` });
+  saveApiKeys(keys);
+  keyInput.value = '';
+  labelInput.value = '';
+  renderApiKeyList();
+}
+
+function loadSavedModel(){
+  try{
+    const saved = localStorage.getItem(MODEL_STORAGE_KEY);
+    if(saved) $('modelName').value = saved;
+  }catch(e){ /* abaikan */ }
+}
+
+function saveModel(){
+  try{
+    localStorage.setItem(MODEL_STORAGE_KEY, $('modelName').value.trim());
+  }catch(e){ /* abaikan */ }
+}
+
+/* ---------------------------------------------------------
+   GEMINI CALLS — otomatis retry & rotasi antar API key kalau
+   kena error transient (overloaded / high demand / rate limit)
+--------------------------------------------------------- */
+function sleep(ms){
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function isRetryableGeminiError(status, message){
+  const msg = (message || '').toLowerCase();
+  return status === 503 || status === 429
+    || msg.includes('overloaded')
+    || msg.includes('high demand')
+    || msg.includes('rate limit')
+    || msg.includes('quota')
+    || msg.includes('resource exhausted')
+    || msg.includes('try again later');
+}
+
+async function callGeminiOnce(apiKey, model, parts){
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const res = await fetch(url, {
     method:'POST',
@@ -1110,13 +1220,50 @@ async function callGemini(parts){
   const data = await res.json();
   if(!res.ok){
     const msg = data && data.error && data.error.message ? data.error.message : `HTTP ${res.status}`;
-    throw new Error(msg);
+    const err = new Error(msg);
+    err.status = res.status;
+    throw err;
   }
   const text = data && data.candidates && data.candidates[0] && data.candidates[0].content
     && data.candidates[0].content.parts && data.candidates[0].content.parts[0]
     && data.candidates[0].content.parts[0].text;
   if(!text) throw new Error('Respons Gemini kosong / format tidak dikenali.');
   return text;
+}
+
+async function callGemini(parts){
+  const model = $('modelName').value.trim();
+  if(!model) throw new Error('Nama model belum diisi.');
+
+  const keys = loadApiKeys();
+  if(!keys.length) throw new Error('Belum ada API key tersimpan. Tambahkan minimal 1 API key di bagian "Koneksi Gemini".');
+
+  const maxAttemptsPerKey = 2;
+  let lastError = null;
+
+  for(let round = 0; round < keys.length; round++){
+    const idx = (apiKeyRotateIndex + round) % keys.length;
+    const apiKey = keys[idx].key;
+
+    for(let attempt = 0; attempt < maxAttemptsPerKey; attempt++){
+      try{
+        const result = await callGeminiOnce(apiKey, model, parts);
+        apiKeyRotateIndex = idx; // key ini berhasil, jadikan starting point berikutnya
+        return result;
+      }catch(e){
+        lastError = e;
+        const retryable = isRetryableGeminiError(e.status, e.message);
+        if(retryable && attempt < maxAttemptsPerKey - 1){
+          await sleep(1200 * (attempt + 1)); // backoff sebelum coba lagi di key yang sama
+          continue;
+        }
+        break; // pindah ke key berikutnya (baik karena retryable habis jatah, atau error lain kayak key invalid)
+      }
+    }
+  }
+
+  const keyInfo = keys.length > 1 ? ` (sudah dicoba ${keys.length} API key)` : '';
+  throw new Error(`${lastError ? lastError.message : 'Gagal menghubungi Gemini'}${keyInfo}`);
 }
 
 function stripJsonFence(text){
@@ -2885,6 +3032,11 @@ function initTool(){
   $('schemaText').textContent = SCHEMA_TEXT;
   renderSectionCards();
   updateSceneStructureHint();
+  loadSavedModel();
+  renderApiKeyList();
+  $('btnAddApiKey').addEventListener('click', addApiKey);
+  $('newApiKeyInput').addEventListener('keydown', (e) => { if(e.key === 'Enter'){ e.preventDefault(); addApiKey(); } });
+  $('modelName').addEventListener('change', saveModel);
   $('btnTest').addEventListener('click', testConnection);
   $('btnAnalyze').addEventListener('click', analyzeImage);
   $('btnAutoCopy').addEventListener('click', autoGenerateCopy);
